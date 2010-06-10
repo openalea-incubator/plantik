@@ -1,0 +1,2 @@
+* 2010 june : add this package (simulation, calendar, component, root, leaf
+  and config modules added) plus documentation and test suite.

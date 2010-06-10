@@ -1,0 +1,2 @@
+* Thomas Cokelaer <thomas cokelaer at sophia inria fr>
+* Damien Fumey
