@@ -25,8 +25,9 @@ def save_config_file(filename=None, config=None):
         fp = open(filename,'w')
     except:
         raise IOError('filename could not be opened')
-    
+    import ConfigParser
     if isinstance(config, ConfigParser.RawConfigParser):
+        print config
         config.write(fp)
         fp.close()
     
