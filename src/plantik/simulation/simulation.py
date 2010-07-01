@@ -45,7 +45,7 @@ class SimulationInterface(object):
         >>> import datetime
         >>> sim.events.new_event('test', datetime.datetime(2000,4,15), datetime.timedelta(1))
         >>> sim.advance()
-        False 
+        False
         >>> sim.time_elapsed
         datetime.timedelta(10)
 
