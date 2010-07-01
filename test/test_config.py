@@ -1,4 +1,4 @@
-from openalea.plantik.tools.config import read_config_file
+from openalea.plantik.tools.config import read_config_file, save_config_file
 import os
 
 def create_wrong_config_file():
@@ -28,9 +28,17 @@ def create_config_file():
     config.set('Section2', 'booltest2', 'No')
 
     # Writing our configuration file to 'example.cfg'
-    with open('example.cfg', 'wb') as configfile:
-        config.write(configfile)
+    fp = open('example.cfg', 'w')
+    config.write(fp)
+    fp.close()
+    return config
 
+def test_save_config():
+    this = create_config_file()
+    save_config_file('test.ini', this)
+    res1 = read_config_file('test.ini')
+    res2 = read_config_file('example.cfg')
+    assert res1==res2
 
 def test_config():
     # create a sample of configuration file

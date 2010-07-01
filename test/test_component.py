@@ -17,17 +17,21 @@ def test_component_interface():
     assert c.id == None
     assert c.state == None
     assert c.demand == 0
+    assert c.allocated == 0
     assert c.resource == 0
     assert c.maintenance == 0
+    assert c.initial_demand == 0
     #check setter of state
     c.state = 'test'
     assert c.state == 'test'
     c.demand = 1
     c.resource = 1
     c.maintenance = 1
+    c.allocated = 1
     assert c.demand == 1
     assert c.resource == 1
     assert c.maintenance == 1
+    assert c.allocated == 1
     # test
 
     # test str
@@ -58,3 +62,7 @@ def test_component_interface():
     # test update function
     c.update(dt=1)
     assert c.age.days == 1
+
+    # test update with a timedelta
+    c.update(dt=datetime.timedelta(1))
+    assert c.age.days == 2
