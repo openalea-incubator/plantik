@@ -13,7 +13,24 @@
 
 
 
-
+def save_config_file(filename=None, config=None):
+    """todo
+    
+    
+    >>> options = read_config_file('config.ini', sections=['general']) #doctest: +SKIP
+    >>> options = save_config_file('config2.ini', config) #doctest: +SKIP
+    
+    """
+    try:
+        fp = open(filename,'w')
+    except:
+        raise IOError('filename could not be opened')
+    
+    if isinstance(config, ConfigParser.RawConfigParser):
+        config.write(fp)
+        fp.close()
+    
+    
 def read_config_file(filename, sections=None, default_values= {}):
     """Read sections in a standard config file and returns the options
 
@@ -26,8 +43,8 @@ def read_config_file(filename, sections=None, default_values= {}):
 
     :return: a dictionary containing all the section options. 
 
-    >>> options = read_config_file('config.ini', sections=['general'])
-    >>> options = read_config_file('config.ini')
+    >>> options = read_config_file('config.ini', sections=['general']) #doctest: +SKIP
+    >>> options = read_config_file('config.ini') #doctest: +SKIP
     """
     import ConfigParser
     config = ConfigParser.RawConfigParser(default_values)
