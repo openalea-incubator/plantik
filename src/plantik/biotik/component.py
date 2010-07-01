@@ -7,8 +7,12 @@
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
-"""
+    
+.. testsetup:: *
 
+    from openalea.plantik.biotik.component import ComponentInterface
+"""
+import openalea.plantik.tools.misc as misc
 import datetime
 
 class ComponentInterface(object):
@@ -35,16 +39,16 @@ class ComponentInterface(object):
         
     >>> root = ComponentInterface('Root', datetime.datetime.now(), state='growing')
     >>> root.age
-    0
+    datetime.timedelta(0)
     >>> root.update(1)
     >>> root.age
-    datetime.timedelta(0)
+    datetime.timedelta(1)
     >>> root.age.days
-    0
+    1
     >>> root.label
-    'Root' 
+    'Root'
     """
-    def __init__(self, label, birthdate, age=0, id=None, state=None):
+    def __init__(self, label=None, birthdate=None, id=None, state=None):
         """**Constructor**
            
         :param label: a string that labels the component
@@ -66,11 +70,16 @@ class ComponentInterface(object):
         
         
         """
-        assert type(birthdate) == datetime.datetime
-        assert type(age) in [int, float]
-        assert type(label) == str
+        # set dummy birthdate
+        if birthdate==None:
+            birthdate = datetime.datetime.now()
+            
+        assert type(birthdate) == datetime.datetime, \
+            "birthdate must be a valid datetime instance"
+        assert type(label) == str, \
+            "label must be a string"
         
-        self._age = datetime.timedelta(age)
+        self._age = datetime.timedelta(0)
         self._birthdate = birthdate
         self._id = id
         self._label = label
@@ -78,6 +87,7 @@ class ComponentInterface(object):
         self._initial_demand = 0.
         self._demand = 0.
         self._resource = 0.
+        self._allocated = 0.
         #: maintenace attribute
         self._maintenance = 0.
       
@@ -136,13 +146,20 @@ class ComponentInterface(object):
     def _set_demand(self, demand=0):
         self._demand = demand
     demand = property(fget=_get_demand, fset=_set_demand, 
+                      doc="demand of the component")
+    
+    def _get_allocated(self):
+        return self._allocated
+    def _set_allocated(self, allocated=0):
+        self._allocated = allocated
+    allocated = property(_get_allocated, _set_allocated, None, 
                       doc="demand of the component")                
+                    
     
     def _get_initial_demand(self):
         return self._demand
     initial_demand = property(fget=_get_initial_demand, 
                       doc="initial demand of the component")                
-    
     
     def _get_resource(self):
         return self._resource
@@ -158,13 +175,15 @@ class ComponentInterface(object):
     maintenance = property(fget=_get_maintenance, fset=_set_maintenance,
                       doc="maintenance cost of the component")                
 
-
-    def __str__(self):
-        out = ''
+    def component_summary(self):
+        out = misc.title('Basic attributes')
         out += 'Label =    %s\n' % self._label
         out += 'Age =     %s\n' % self._age
         out += 'Id =      %s\n' % self._id
         return out
+
+    def __str__(self):
+        return self.component_summary()
 
     def update(self, dt):
         """update commands
@@ -173,5 +192,8 @@ class ComponentInterface(object):
         
         :param dt: in days
         """
-        self._age += datetime.timedelta(dt)
+        if type(dt) == datetime.timedelta:
+            self._age += dt
+        else:
+            self._age += datetime.timedelta(dt)
         

@@ -1,4 +1,6 @@
+
 from openalea.plantik.biotik.component import ComponentInterface
+
 
 
 class Root(ComponentInterface):
@@ -11,7 +13,8 @@ class Root(ComponentInterface):
     
     
     """
-    def __init__(self, initial_resource, label='Root', birthdate=None, id=None):
+    def __init__(self, initial_resource, birthdate=None, 
+                 id=None, min_radius=0.001):
         """
         
         :param initial_resource: the amount of initial resource/biomass of 
@@ -26,18 +29,24 @@ class Root(ComponentInterface):
             * :attr:`radius`
             * :attr:`R` the global resource available in the root system
         """
-        ComponentInterface.__init__(self, label, birthdate, id=id)
+        ComponentInterface.__init__(self, label='Root', birthdate=birthdate, id=id)
         
-        self.radius=0.001
+        self._radius = min_radius
         self._R = initial_resource
+
+    
+    def _getRadius(self):
+        return self._radius
+    def _setRadius(self, value):
+        self._radius = value
+    radius = property(_getRadius, _setRadius, None, "Radius's Docstring")
         
         
-    def _get_R(self):
+    def _getR(self):
         return self._R
-    def _set_R(self, R):
+    def _setR(self, R):
         self._R = R
-    R = property(fget=_get_R, fset=_set_R, 
-                 doc="returns global resource.")
+    R = property(_getR, _setR, None, doc="returns global resource.")
    
     def update(self, dt):
         """Update the root characteristics
@@ -45,14 +54,16 @@ class Root(ComponentInterface):
         :param dt: in days
         """
         super(Root, self).update(dt)
-        self.radius *= 1.0
+        self._radius *= 1.0
 
         # if hypothesis is to reset the root ressource.
         
     def demand_calculation(self, **kargs):
+        len(kargs)
         self.demand = 0
         return self.demand
     def resource_calculation(self, **kargs):
+        len(kargs)
         self.resource = 0
         return self.resource
 
