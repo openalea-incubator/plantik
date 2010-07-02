@@ -81,3 +81,50 @@ def read_config_file(filename, sections=None, default_values= {}):
 
     return options
 
+
+class Test(object):
+    def __init__(self, **kargs):
+        for name, value in kargs.items():
+            setattr(self, name, value)
+            
+class ReadConfigFile(object):
+    def __init__(self, filename, sections=None, default_values={}):
+        import ConfigParser
+        self.config = ConfigParser.RawConfigParser(default_values)
+        self.config.read(filename) 
+    
+        if sections == None:
+            sections = self.config.sections()
+        elif type(sections)!=list:
+            raise TypeError("""Error, sections argument must be a list of strings 
+                corresponding to the sections to be read""")
+        
+    
+        self.read_sections(sections)
+                
+    def read_sections(self, sections):
+        for section in sections:
+            self.__dict__[section] = Test(**self.options2dict(section))
+            
+            
+    def options2dict(self, section):
+        options = {}
+        for option in self.config.options(section):
+            if option in options.keys():
+                raise ValueError("""
+                    This option %s was found in section %s but was already read earlier. 
+                    Check that parameters are not identical in your configuration file.""" 
+                    % (option, section))
+            data = self.config.get(section, option)
+            if data in ['True', 'Yes', 'true', 'yes']:
+                options[option] = True
+            elif data in ['False', 'false', 'no', 'No']:
+                options[option] = False
+            else:
+                try: # numbers
+                    options[option] = self.config.getfloat(section, option)
+                except: #string
+                    options[option] = self.config.get(section, option)
+    
+        return options
+    

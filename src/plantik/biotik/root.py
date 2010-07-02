@@ -1,4 +1,3 @@
-
 from openalea.plantik.biotik.component import ComponentInterface
 
 

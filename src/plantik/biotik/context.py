@@ -2,7 +2,7 @@ class Context(object):
     """Simple structure to store topological information
 
     """
-    def __init__(self, rank=None, order=None, path=None):
+    def __init__(self, rank=None, order=None, path=None, alpha=1., beta=1.):
         self.rank = rank
         self.path = path
         self.order = order
@@ -14,3 +14,4 @@ class Context(object):
         res += ' - path=%s\n' % self.path
         res += ' - order=%s\n' % self.order
         return res
+    

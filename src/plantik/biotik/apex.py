@@ -11,16 +11,16 @@ from openalea.plantik.biotik.measure import Measure
 class Apex(ComponentInterface):
     def __init__(self, birthdate=None, order=0, path=1, rank=1,
                  bud_break_year=None,
-                 demand=2, metamer_cost=2, maintenance=0, 
+                 demand=2, metamer_cost=2, maintenance=0,
                  distance_meter=0., id=None, plastochron=3.,
                  vigor=0.1):
-        
-        
-        
+
+
+
         self.context = Context(rank=rank, order=order, path=path)
         ComponentInterface.__init__(self, label='Apex',
                                     birthdate=birthdate, id=id)
-        
+
         self.plastochron = plastochron
         self.current_plastochron = 0.
         self.metamer_cost = metamer_cost
@@ -34,11 +34,11 @@ class Apex(ComponentInterface):
         self.growth_threshold = 0.2
         self.growth_potential = 1
         self.vigor = vigor
-        
+
         self.height_v = [self.distance_meter]
         self.demand_initial_v = [self._demand_initial]
         self.internode_length_v = []
-        
+
         self.variables = ['age', 'radius', 'vigor', 'demand', 'allocated']
         for var in self.variables:
             self.__setattr__(var+'_v', [])
@@ -54,12 +54,12 @@ class Apex(ComponentInterface):
         self.vigor_v.append(self.vigor)
         self.radius_v.append(self.radius)
 
-    
+
     def update(self, dt):
         super(Apex, self).update(dt)
         self.current_plastochron += dt
         self.save_data_product()
-        
+
     def demand_calculation(self,  **kargs):
 
         alpha = kargs.get("alpha", 1.)
@@ -74,7 +74,7 @@ class Apex(ComponentInterface):
         order = self.context.order
         path = self.context.path
         rank = self.context.rank
-        
+
         if model=="order_height":
             self.demand = self._demand_initial / float(order+1)**alpha / float(path)**beta
             return self.demand
@@ -82,11 +82,11 @@ class Apex(ComponentInterface):
             self.weight_order = 1./float(order+1)**alpha
             self.weight_height = 1./float(path)**beta
             self.demand = self._demand_initial * self.weight_order * self.weight_height
-            
+
             self.weight_gamma = 1./(1+exp(+(0.03*(self.age.days-90.))))
             self.demand *= self.weight_gamma**gamma
             self.demand *= self.vigor**delta
-            
+
             return self.demand
         elif model=='none':
             # nothing to be done in the simple model
@@ -97,7 +97,7 @@ class Apex(ComponentInterface):
 
     def resource_calculation(self):
         return self.resource
-    
+
     def _plot_demand(self,clf=True ):
         import pylab
         import numpy
@@ -106,7 +106,7 @@ class Apex(ComponentInterface):
         pylab.plot(self.time_v, self.allocated_v, '-o', label='allocated')
         pylab.hold(True)
         pylab.plot(self.time_v, self.demand_v, 'x', label='demand')
-        pylab.plot(self.time_v, self.demand_initial_v, 'x', 
+        pylab.plot(self.time_v, self.demand_initial_v, 'x',
                    label='initial demand')
         pylab.grid(True)
         pylab.legend(loc='best')
@@ -116,7 +116,7 @@ class Apex(ComponentInterface):
     def plot(self, variables=None, tag='', clf=True, show=True, symbol='-o'):
         import pylab
         _variables = CheckVariables(self.variables, variables)
-        
+
         if clf is True:
             pylab.figure()
             pylab.clf()
@@ -129,8 +129,8 @@ class Apex(ComponentInterface):
                 pylab.show()
             pylab.legend()
             pylab.savefig('test_%s_%s_%s.png' % (self.label, tag, variable))
-       
-    
+
+
 
     def __str__(self):
         res = self.component_summary()
@@ -140,5 +140,5 @@ class Apex(ComponentInterface):
         res += ' - resource=%s' % self._resource
         res += ' - allocated=%s' % self._allocated
         res += ' - maintenance=%s' % self._maintenance
-        
+
         return res
