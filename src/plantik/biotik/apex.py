@@ -4,7 +4,6 @@ from openalea.plantik.biotik.growth import GrowthFunction
 from openalea.plantik.tools.plot import CheckVariables
 from math import pi, exp
 import openalea.plantik.tools.misc as misc
-from openalea.plantik.biotik.measure import Measure
 
 
 

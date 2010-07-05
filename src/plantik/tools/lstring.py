@@ -20,7 +20,7 @@ from openalea.mtg.io import lpy2mtg
 
 
 
-def lstring_extract(lstring, type):
+def lstring_extract(lstring, label):
     """
     Returns a list of objects of type=type found in the lstring
 
@@ -30,7 +30,7 @@ def lstring_extract(lstring, type):
     for elt in lstring:
         # could not use isinstance for some reason ?
         try:
-            if elt[0].type in type:
+            if elt[0].label in label:
                 data.append(elt[0])
         except:
             pass

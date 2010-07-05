@@ -22,7 +22,7 @@ from openalea.plantik.biotik.growth import GrowthFunction
 from openalea.plantik.tools.plot import CheckVariables
 from math import pi
 import openalea.plantik.tools.misc as misc
-from openalea.plantik.biotik.measure import Measure
+
 
 
 import numpy
@@ -219,14 +219,13 @@ class Leaf(ComponentInterface):
         # leaf min must correspond to internode length min so that leafmaxarea>-leafminarea
         self.area_min = 1. * 0.01 * 0.01   # 1 cm^2 changed into  m^2
         self.area_max = 30 * 0.01 * 0.01 * internode_vigor   # 30 cm^2 changed into m^2
-        self.measurements = Measure(radius=self.radius_min, 
-                                    area=GrowthFunction(
-                                               self.area_min, 
-                                               self.area_max,
-                                               maturation=self.maturity,
-                                               growth_rate=self.growth_rate,
-                                               growth_function=growth_function)
-                         )
+        self._radius = self.radius_min
+        self._area = GrowthFunction(self.area_min,
+                                   self.area_max,
+                                   maturation=self.maturity,
+                                   growth_rate=self.growth_rate,
+                                   growth_function=growth_function)
+
         self.maintenance = maintenance # cost to maintain the elt alive
    
         self.mass_per_area = 220. #g/m^2
@@ -284,33 +283,28 @@ class Leaf(ComponentInterface):
         return self.resource * self.area / self.area_max 
         #return self.mass * self.resource * dt
 
-    def __getattr__(self, name):
-        """the __getattr__ is implemented to create aliases dynamically
-        
-        It allows to access directly to :attr:`measurements.area` value and to 
-        :attr:`measurements.radius`.
-        
-        """
-        if name=='area':
-            return self.measurements.area.getValue(self.age.days)
-        elif name=='radius':
-            return self.measurements.radius
-        
-        
-    def __setattr__(self, name, value):
-        """make length and radius read-only"""
-        if name in ['area', 'radius']:
-            raise AttributeError("radius and area attribute cannot be set.")
-        else:
-            self.__dict__[name] = value
+    
+    def __setstate__(self, data):
+        self.__dict__.update(data)
 
     def _compute_maintenance(self):
         pass
         
-
     def _getMass(self):
         return self.mass_per_area * self.area
     mass = property(_getMass, None, None, doc="returns the leaf mass in kgs")
+    
+    def _getRadius(self):
+        return self._radius
+    def _setRadius(self, radius):
+        self._radius = radius
+    radius = property(_getRadius, _setRadius, None, doc="radius")
+
+    def _getArea(self):
+        return self._area.getValue(self.age.days)
+    area = property(_getArea, None, None, doc="area")
+
+    
     
     def plot(self, variables=None, tag='', clf=True, show=True, symbol='-o'):
         import pylab

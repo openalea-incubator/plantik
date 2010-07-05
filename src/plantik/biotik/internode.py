@@ -2,9 +2,11 @@ from openalea.plantik.biotik.context import Context
 from openalea.plantik.biotik.component import ComponentInterface
 from openalea.plantik.biotik.growth import GrowthFunction
 from openalea.plantik.tools.plot import CheckVariables
-from openalea.plantik.biotik.measure import Measure
 from math import pi
 import openalea.plantik.tools.misc as misc
+
+
+
 
 
 
@@ -23,13 +25,12 @@ class Internode(ComponentInterface):
         #Context.__init__(rank=rank, path=path, order=order)
         ComponentInterface.__init__(self, label='Internode', birthdate=birthdate, id=id)
 
-        self.measurements = Measure(radius=Internode.radius_min,
-                                    length=GrowthFunction(Internode.length_min,
-                                               length_max,
-                                               maturation=maturation,
-                                               growth_rate=growth_rate,
-                                               growth_function=growth_function)
-                         )
+        self._radius = Internode.radius_min
+        self._length = GrowthFunction(Internode.length_min,
+                                     length_max,
+                                     maturation=maturation,
+                                     growth_rate=growth_rate,
+                                     growth_function=growth_function)
 
         self.demand_coeff = 0.
         self._plastochron = 3.
@@ -59,32 +60,11 @@ class Internode(ComponentInterface):
         res += ' - maintenance=%s' % self._maintenance
         return res
 
-    def __getattr__(self, name):
-        """the __getattr__ is implemented to create aliases dynamically
-
-
-        It allows to access directly to :attr:`measurements.length` value and to
-        :attr:`measurements.radius`.
-
-        """
-        if name=='length':
-            return self.measurements.length.getValue(self.age.days)
-        elif name=='radius':
-            return self.measurements.radius
-
-
-    def __setattr__(self, name, value):
-        """make length and radius read-only"""
-        if name in ['length', 'radius']:
-            raise AttributeError("radius and length attribute cannot be set.")
-        else:
-            self.__dict__[name] = value
-
     def save_data_product(self):
         """update the vectors that stored data over time"""
         self.age_v.append(self.age.days)
-        self.length_v.append(self.length)
-        self.radius_v.append(self.radius)
+        self.length_v.append(self._length.getValue(self.age.days))
+        self.radius_v.append(self._radius)
 
     def plot(self, variables=None, tag='', clf=True, show=True, symbol='-o'):
         import pylab
@@ -124,6 +104,17 @@ class Internode(ComponentInterface):
     def _getMass(self):
         return self.density * self.volume
     mass = property(_getMass, None, None, doc="returns the internode mass")
+
+    def _getRadius(self):
+        return self._radius
+    def _setRadius(self, radius):
+        self._radius = radius
+    radius = property(_getRadius, _setRadius, None, doc="radius")
+
+    def _getLength(self):
+        return self._length.getValue(self.age.days)
+    length = property(_getLength, None, None, doc="length")
+
 
     def update(self, dt):
         super(Internode, self).update(dt)
