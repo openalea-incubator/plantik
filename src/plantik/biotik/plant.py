@@ -1,13 +1,93 @@
 
+class DataInterface():
+    def __init__(self, options):
+        self.verbose = options.general.verbose
+        self.filename = options.general.filename_prefix
+        self.time = []
+        
+    def plot(self):
+        raise NotImplementedError
+    
+    def update(self, time):
+        raise NotImplementedError
 
+class DataCounter(DataInterface):
+    def __init__(self, options):
+        DataInterface.__init__(self, options=options)
+        self.apices = []
+        self.leaves = []
+        self.internodes = []
+        self.total = []
+        
+    def update(self, lstring, time):
+        nA = lstring.count('A')
+        nI = lstring.count('I')
+        nL = lstring.count('L')
+        self.apices.append(nA)
+        self.internodes.append(nI)
+        self.leaves.append(nL)
+        self.total.append(nA+nI+nL)
+        self.time.append(time)
+        
+    def plot(self, show=True):
+        import pylab
+        pylab.rcParams['text.usetex'] = True
 
+        filename = self.filename + '_counter' + '.png'
+        if self.verbose == True:
+            print 'Saving %s ' % filename,
+        fig = pylab.figure()
+        pylab.clf()
+        
+        try:
+            pylab.semilogy(self.time, self.apices, label='Apex number')
+            pylab.hold(True)
+            pylab.semilogy(self.time, self.internodes, label='Internode number')
+            pylab.semilogy(self.time, self.leaves, label='Leaves number')
+            pylab.semilogy(self.time, self.total, label='total')
+            pylab.xlabel('Time (days)')
+            pylab.ylabel(r'\#')
+            pylab.legend(loc='best')
+            pylab.grid(True)
+        except ValueError, e:
+            pylab.text(0,0,'failed')
 
-class DataVector(object):
-    def __init__(self):
+        pylab.savefig(filename)
+        if show:
+            pylab.show()
+        if self.verbose == True:
+            print '...done'
+        return fig
+
+class DataVector(DataInterface):
+    def __init__(self, options):
+        DataInterface.__init__(self, options=options)
         self.D = []
         self.A = []
         self.R = []
         self.C = []
+        
+    def plot(self, show=True):
+        import pylab
+        pylab.rcParams['text.usetex'] = True
+
+        filename = self.filename + '_flux' + '.png'
+        if self.verbose == True:
+            print 'Saving %s ' % filename,
+        pylab.clf()
+        pylab.semilogy(self.time, self.D, label='Apex number')
+        pylab.xlabel('Time (days)')
+        pylab.ylabel(r'\#')
+        pylab.legend(loc='best')
+        pylab.grid(True)
+        pylab.savefig(filename)
+        if show:
+            pylab.show()
+        if self.verbose is True:
+            print '...done'
+        
+        
+        
 
 class Plant(object):
     """A simple data structure that is used to store simulation data products
@@ -28,7 +108,7 @@ class Plant(object):
         .. todo:: clean up all other variables that could be extracted from the lstring ?
         """
         self.dt = options.general.time_step
-        self.data = DataVector()
+        self.data = DataVector(options)
         
         self.time = []
         self.D = None
@@ -50,6 +130,9 @@ class Plant(object):
         self.apex = {'demand':[], 'allocated':[], 'height':[], 'age':[]} # keeps track of the main apex characteristics
         self.all = {'age':[], 'order':[], 'height':[]}
         
+        self.counter = DataCounter(options)
+                
+        
     def __str__(self):
         res = "R:" + str(self.R) + "\n"
         res += "D:" + str(self.D) + "\n"
@@ -57,11 +140,11 @@ class Plant(object):
         return res
          
     def plot(self):
-        import pylab
-        pylab.plot(self.data.R)
-        pylab.show()         
+        pass
+        
+                 
                          
-    def update(self):
+    def update(self, time_elapsed):
         self.D = 0.
         if self.options.misc.reset_resource:
             self.R = 0.
@@ -85,15 +168,17 @@ class Plant(object):
         self.data.R.append(self.R)
         self.data.D.append(self.D)
         self.data.C.append(self.C)
-        
+        self.data.time.append(time_elapsed)
         # substract the living cost from the total resource.
         self.R -= self.C 
         #todo what about substraced the reserve?
         if self.R < 0:
             self.R = 0
-            
-        self.counting()
         
+        self.time.append(time_elapsed)
+        
+        self.counting()
+        self.counter.update(self.lstring, time_elapsed)
     def counting(self):
         
         nA = self.lstring.count('A')
@@ -115,3 +200,6 @@ class Plant(object):
     revision = property(fget=_get_revision,
                    doc="the revision of the lsystem used within the simulation")
     
+    
+        
+        

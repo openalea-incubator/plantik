@@ -26,6 +26,7 @@ class Internode(ComponentInterface):
         ComponentInterface.__init__(self, label='Internode', birthdate=birthdate, id=id)
 
         self._radius = Internode.radius_min
+        self._target_radius= Internode.radius_min
         self._length = GrowthFunction(Internode.length_min,
                                      length_max,
                                      maturation=maturation,
@@ -110,6 +111,13 @@ class Internode(ComponentInterface):
     def _setRadius(self, radius):
         self._radius = radius
     radius = property(_getRadius, _setRadius, None, doc="radius")
+    
+    def _getTargetRadius(self):
+        return self._target_radius
+    def _setTargetRadius(self, target_radius):
+        self._target_radius = target_radius
+    target_radius = property(_getTargetRadius, _setTargetRadius, None, doc="radius")
+
 
     def _getLength(self):
         return self._length.getValue(self.age.days)
