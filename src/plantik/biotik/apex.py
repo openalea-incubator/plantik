@@ -33,19 +33,20 @@ class Apex(ComponentInterface):
         self.growth_threshold = 0.2
         self.growth_potential = 1
         self.vigor = vigor
-
-        self.height_v = [self.distance_meter]
+        
         self.demand_initial_v = [self._demand_initial]
         self.internode_length_v = []
 
-        self.variables = ['age', 'radius', 'vigor', 'demand', 'allocated']
+        self.variables = ['age', 'radius', 'vigor', 'demand', 'allocated', 'height']
         for var in self.variables:
             self.__setattr__(var+'_v', [])
         self.save_data_product()
+        
+        #self.radius = 0.
 
     def save_data_product(self):
         self.age_v.append(self.age.days)
-        #self.height_v.append(self.distance_meter)
+        self.height_v.append(self.distance_meter)
         self.allocated_v.append(self.allocated)
         self.demand_v.append(self.demand)
         #self.demand_initial_v.append(self._demand_initial)
@@ -120,14 +121,18 @@ class Apex(ComponentInterface):
             pylab.figure()
             pylab.clf()
         for variable in _variables:
-            pylab.plot(self.age_v, getattr(self, '%s_v' % variable), symbol)
-            pylab.xlabel('time since birthdate')
-            pylab.ylabel('%s of this %s' % (variable, self.label))
-            pylab.grid(True)
-            if show==True:
-                pylab.show()
-            pylab.legend()
-            pylab.savefig('test_%s_%s_%s.png' % (self.label, tag, variable))
+            if variable not in ['age', 'radius']:
+                pylab.plot(self.age_v, getattr(self, '%s_v' % variable), symbol, label=variable)
+                pylab.xlabel('time since birthdate')
+                pylab.ylabel('%s of this %s' % (variable, self.label))
+                pylab.grid(True)
+        pylab.plot([min(self.age_v), max(self.age_v)], 
+                   [self.growth_threshold, self.growth_threshold], 
+                   label='growth threshold')
+        if show==True:
+            pylab.show()
+        pylab.legend()
+        pylab.savefig('test_%s_%s_%s.png' % (self.label, tag, variable))
 
 
 

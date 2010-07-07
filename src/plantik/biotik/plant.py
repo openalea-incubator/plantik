@@ -1,6 +1,7 @@
 
 class DataInterface():
     def __init__(self, options):
+     
         self.verbose = options.general.verbose
         self.filename = options.general.filename_prefix
         self.time = []
@@ -74,8 +75,15 @@ class DataVector(DataInterface):
         filename = self.filename + '_flux' + '.png'
         if self.verbose == True:
             print 'Saving %s ' % filename,
+        
+        fig = pylab.figure()
         pylab.clf()
-        pylab.semilogy(self.time, self.D, label='Apex number')
+        
+        pylab.plot(self.time, self.D, '-o',label='Total demand')
+        pylab.hold(True)
+        pylab.plot(self.time, self.R, '-x', label='Total resource')
+        pylab.plot(self.time, self.A, '-.s', label='Total allocation')
+        pylab.plot(self.time, self.C, '', label='Total cost')
         pylab.xlabel('Time (days)')
         pylab.ylabel(r'\#')
         pylab.legend(loc='best')
@@ -108,7 +116,7 @@ class Plant(object):
         .. todo:: clean up all other variables that could be extracted from the lstring ?
         """
         self.dt = options.general.time_step
-        self.data = DataVector(options)
+        self.DARC = DataVector(options)
         
         self.time = []
         self.D = None
@@ -118,12 +126,8 @@ class Plant(object):
         self.C = None
         self.A = None
         self.allocated = []
-        self.nA = []        # number of apex versus time
-        self.nI = []        # number of Internode versus time
-        self.n = []         # number of total elements versus time
-        self.nL = []        # number of leaves elements versus time
-        self.nF = []        # number of fruits elements versus time
         self.lstring = None     # store the complete final lstring
+        self.mtg = None
         self._options = options  # store the simulation options
         self._revision = revision # used to store the revision number
         self.duration = 0       # used to store the duration of the simulation
@@ -131,7 +135,10 @@ class Plant(object):
         self.all = {'age':[], 'order':[], 'height':[]}
         
         self.counter = DataCounter(options)
-                
+        self.dv = 0
+        self.pipe_fraction = 0.1
+        self.pipe_fraction_v = [self.pipe_fraction]
+        self.pipe_ratio_v = [0.]
         
     def __str__(self):
         res = "R:" + str(self.R) + "\n"
@@ -140,9 +147,13 @@ class Plant(object):
         return res
          
     def plot(self):
-        pass
+        self.counter.plot()
+        self.DARC.plot()
+        self.plot_order()
         
                  
+    #def plot_order(self):
+        
                          
     def update(self, time_elapsed):
         self.D = 0.
@@ -151,6 +162,7 @@ class Plant(object):
         
             
         self.C = 0.
+        self.dV = 0.
         for elt in self.lstring:
             if elt.name in ['R', 'A', 'I', 'L']:
                 self.C += elt[0].maintenance
@@ -161,35 +173,88 @@ class Plant(object):
                                     delta=self.options.context.vigor_coeff,
                                     gamma=self.options.context.age_coeff)
                 self.R += elt[0].resource_calculation()
+            if elt.name in ['I']:
+                self.dV += elt[0].dvolume / (1./elt[0].cost_per_metamer)
         self.D *= self.dt
         self.R *= self.dt
         self.C *= self.dt
         
-        self.data.R.append(self.R)
-        self.data.D.append(self.D)
-        self.data.C.append(self.C)
-        self.data.time.append(time_elapsed)
+        
+        
+        self.DARC.R.append(self.R)
+        self.DARC.D.append(self.D)
+        self.DARC.C.append(self.C)
+        self.DARC.time.append(time_elapsed)
         # substract the living cost from the total resource.
-        self.R -= self.C 
-        #todo what about substraced the reserve?
-        if self.R < 0:
-            self.R = 0
+        if self.C > self.R:
+            self.R = 0.
+        else:
+            self.R -= self.C 
+        
+        # get fraction of resource allocated to pipe construction
+        if self.dV < 0.1:
+            self.dV = 0
+        if self.dV > 0: 
+            # ratio of available resource
+            pipe_ratio = (self.R * self.pipe_fraction) / self.dV
+        else:
+            pipe_ratio = 0.
+        print 'dv=',self.dV
+        print 'pipe ratio=', pipe_ratio
+        print 'R=',self.R
+        
+        self.pipe_ratio_v.append(pipe_ratio)
+        self.pipe_fraction_v.append(self.pipe_fraction)
+        
+        if self.dV != 0:
+            if pipe_ratio > 1:
+                pipe_ratio = 1
+                self.pipe_fraction -=0.1
+            else:
+                self.pipe_fraction +=0.1
+        
+            
+        if self.pipe_fraction<0.1:
+            self.pipe_fraction = 0.1
+        if self.pipe_fraction>=1:
+            self.pipe_fraction = 0.9
+        print 'target pipe fraction=',self.pipe_fraction
+        self.R -= self.dV * pipe_ratio 
+        print 'new R=', self.R
+        for elt in self.lstring:
+            if elt.name in ['I']:
+                elt[0].radius += (elt[0]._target_radius - elt[0].radius) * pipe_ratio
         
         self.time.append(time_elapsed)
         
-        self.counting()
+
         self.counter.update(self.lstring, time_elapsed)
-    def counting(self):
+        self.branch_update()
         
-        nA = self.lstring.count('A')
-        nI = self.lstring.count('I')
-        nL = self.lstring.count('L')
-        self.nA.append(nA)
-        self.nI.append(nI)
-        self.nL.append(nL)
-        self.n.append(nA+nI+nL)
+    def branch_update(self):
         
-         #read only attributes
+        from openalea.mtg.aml import *
+        Activate(self.mtg)
+        
+        
+        branch_ids = VtxList(2)
+        
+        # calculate the total length
+        internode_ids = [Components(x,Scale=4) for x in branch_ids]
+        length = [[sum([self.mtg.property('Internode')[id].length for id in y if self.mtg.class_name(id)=='I'])]  for y in internode_ids]
+        for vid,length in zip(branch_ids, length):
+           self.mtg.property('Branch')[vid].length = length
+           
+        for vid in branch_ids:
+            first_id = Components(vid, Scale=4)[0]
+            classname = Class(first_id)
+            if classname=='I':
+                self.mtg.property('Branch')[vid].radius = self.mtg.property('Internode')[first_id].radius
+            else:
+                self.mtg.property('Branch')[vid].radius = 0.
+
+    
+    
     def _get_options(self):
         return self._options
     options = property(fget=_get_options,
@@ -200,6 +265,11 @@ class Plant(object):
     revision = property(fget=_get_revision,
                    doc="the revision of the lsystem used within the simulation")
     
-    
+    def mtg_plot_example(self):
+        mtg = self.mtg
+        o = [mtg.order(x) for x in mtg.vertices() if mtg.label(x)=='A']
+        import pylab
+        pylab.hist(o, [0,1,2,3,4,5,6,7,8,9,10])
+        pylab.show()
         
-        
+            

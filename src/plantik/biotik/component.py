@@ -110,7 +110,8 @@ class ComponentInterface(object):
         """this function should compute the amount of 
         resource requied to keep this component alive
         """
-        raise NotImplementedError()
+        pass
+        #raise NotImplementedError()
         
 
     #read only attributes

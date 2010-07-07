@@ -14,7 +14,7 @@ class Internode(ComponentInterface):
     radius_min = 0.001
     length_max = 0.03
     length_min = 0.001
-    cost_per_metamer = 1./(0.001*0.001*0.03 * pi)
+    cost_per_metamer = 1./(radius_min*radius_min*length_max * pi)
 
     def __init__(self, length_max=length_max,
                  cambial_fraction=0., birthdate=None,
@@ -102,6 +102,11 @@ class Internode(ComponentInterface):
         return pi * self.radius * self.radius * self.length
     volume = property(_getVolume, None, None, doc="returns the internode volume")
 
+    def _getdVolume(self):
+        return pi * self._target_radius * self._target_radius * self.length - self.volume
+    dvolume = property(_getdVolume, None, None, doc="returns dv")
+
+
     def _getMass(self):
         return self.density * self.volume
     mass = property(_getMass, None, None, doc="returns the internode mass")
@@ -130,6 +135,7 @@ class Internode(ComponentInterface):
         if self.current_plastochron > self._plastochron:
             self.current_plastochron -= self._plastochron
         self.save_data_product()
+        self._compute_maintenance(dt)
         # todo what if current_plastochron>plastochron*2
 
 
