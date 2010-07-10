@@ -21,7 +21,7 @@ from openalea.plantik.biotik.component import ComponentInterface
 from openalea.plantik.biotik.growth import GrowthFunction
 from openalea.plantik.tools.plot import CheckVariables
 from math import pi
-import openalea.plantik.tools.misc as misc
+from openalea.plantik.tools.misc import title
 
 
 
@@ -249,7 +249,7 @@ class Leaf(ComponentInterface):
     def __str__(self):
         res = self.component_summary()
         res += self.context.__str__()
-        res += misc.title('other attributes')
+        res += title('other attributes')
         res += ' - demand=%s' % self._demand
         res += ' - resource=%s' % self._resource
         res += ' - allocated=%s' % self._allocated

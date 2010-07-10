@@ -12,7 +12,7 @@
 
     from openalea.plantik.biotik.component import ComponentInterface
 """
-import openalea.plantik.tools.misc as misc
+from openalea.plantik.tools import misc
 import datetime
 
 class ComponentInterface(object):

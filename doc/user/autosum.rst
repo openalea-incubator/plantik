@@ -43,6 +43,9 @@ tools sub package
 .. autosummary::
 
     openalea.plantik.tools.config.read_config_file
+    openalea.plantik.tools.misc.title
+    openalea.plantik.tools.plot.CheckVariables
+    openalea.plantik.tools.lstring.lstring_extract
 
 
 :mod:`openalea.plantik.tools.config` module
@@ -54,6 +57,38 @@ tools sub package
     :show-inheritance:
     :synopsis: tools to manipulate configuration files 
 
+
+:mod:`openalea.plantik.tools.plot` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.plot
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: tools to plot results easily
+
+:mod:`openalea.plantik.tools.misc` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.misc
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: todo
+
+
+
+:mod:`openalea.plantik.tools.lstring` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.lstring
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: todo
+
+
+
 biotik sub package
 =========================
 
@@ -62,6 +97,10 @@ biotik sub package
 
     openalea.plantik.biotik.component.ComponentInterface
     openalea.plantik.biotik.root.Root
+    openalea.plantik.biotik.internode.Internode
+    openalea.plantik.biotik.leaf.Leaf
+    openalea.plantik.biotik.apex.Apex
+    openalea.plantik.biotik.measure.Measure
 
 :mod:`openalea.plantik.biotik.component` module
 --------------------------------------------------------------
@@ -70,7 +109,7 @@ biotik sub package
     :undoc-members:
     :inherited-members:
     :show-inheritance:
-    :synopsis: Anstract base class for all biological components
+    :synopsis: Abstract base class for all biological components
 
 
 :mod:`openalea.plantik.biotik.root` module
@@ -82,5 +121,55 @@ biotik sub package
     :show-inheritance:
     :synopsis: class for root system component
 
+
+:mod:`openalea.plantik.biotik.leaf` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.leaf
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: class for leaf component
+
+
+
+:mod:`openalea.plantik.biotik.context` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.context
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: class dedicated to context
+
+
+:mod:`openalea.plantik.biotik.growth` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.growth
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: todo
+
+
+:mod:`openalea.plantik.biotik.measure` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.measure
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: todo
+
+
+:mod:`openalea.plantik.biotik.apex` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.apex
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: class for apex component
 
 

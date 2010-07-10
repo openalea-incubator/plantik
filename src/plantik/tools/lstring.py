@@ -15,7 +15,6 @@
 
 
 from openalea.lpy import Lsystem
-from openalea.mtg.io import lpy2mtg
 
 
 
@@ -42,6 +41,7 @@ def lstring_extract(lstring, label):
 
 
 def _read_lsystem(filename):
+    from openalea.mtg.io import lpy2mtg
     l = Lsystem(filename)
     return lpy2mtg(lstring,l)
 

@@ -1,8 +1,8 @@
 """
 .. topic:: summary
 
-    This module implements the :class:`Calendar` class that ease manipulation of 
-    dates and time. It also implementes the :class:`Event` that defines a event by a starting 
+    This module implements the :class:`Calendar` class that ease manipulation of
+    dates and time. It also implementes the :class:`Event` that defines a event by a starting
     time and duration. Naturally, the :class:`Events` is also available, which is a list of events.
 
     .. sectionauthor:: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
@@ -24,7 +24,7 @@ class Calendar(object):
 
 
     Calendar has three main attributes with getter and setters:
-        
+
     There is one main method, called :meth:`advance` that increments the :attr:`date` by :attr:`dt`
     and returns True is a new year has been passed through.
 
@@ -41,18 +41,18 @@ class Calendar(object):
     def __init__(self,  year=-1, month=1, day=1, delta_in_days=1):
         """**Constructor**
 
-        :param year: valid year 
+        :param year: valid year
         :param month: valid month in [1,12]
         :param day: valid day in [1, 31]
         :param delta_in_days: the time step in days
 
 
         :attributes:
-        
+
             * :attr:`year`, the current year
             * :attr:`dt` the increment or time step (instance of :class:`datetime.timedelta`
             * :attr:`date` :class:`datetime.datetime`
-            
+
         """
 
         assert year!=-1 , "you must provide a valid year"
@@ -65,9 +65,9 @@ class Calendar(object):
         return self._date
     def _set_date(self, date):
         self._date = date
-    date = property(fget=_get_date, fset=_set_date, 
+    date = property(fget=_get_date, fset=_set_date,
                     doc="Set date given a valid datetime.datetime() instance")
- 
+
     def _get_year(self):
         return self._date.year
     def _set_year(self, year):
@@ -124,7 +124,7 @@ class Event(object):
 
     """
 
-    def __init__(self, name, date, duration=datetime.timedelta(1), 
+    def __init__(self, name, date, duration=datetime.timedelta(1),
                  periodic = True):
         """
 
@@ -132,16 +132,16 @@ class Event(object):
         :param date: a starting date (:class:`datetime.datetime` instance)
         :param duration: a duration in days (:class:`datetime.timedelta`),
             default is 1 day
-        :param periodic: a boolean to specify if the event is a singl event or 
+        :param periodic: a boolean to specify if the event is a singl event or
           is periodic over years
-          
+
         :attributes:
             * :attr:`name`
             * :attr:`date`
             * :attr:`active`
             * :attr:`duration`
             * :attr:`periodic`
- 
+
         """
         assert type(date) == datetime.datetime
         assert type(name) == str
@@ -164,17 +164,31 @@ class Event(object):
         """
 
         :param date: a :class:`datetime.datetime` instance
-       
+
         :returns: True if the event span the current date
 
         """
+
         assert type(date) == datetime.datetime
-        if self._date > date:
-            self.active = False
-        elif self._date+self.duration < date:
-            self.active = False
+        if self.periodic is False:
+            if self._date > date or self._date+self.duration<date:
+                self.active = False
+            else:
+                self.active = True
         else:
-            self.active = True
+            try:
+                newdate = datetime.datetime(self._date.year, date.month, date.day)
+            except:
+                if date.month == 2 and date.day == 29:
+                    newdate = datetime.datetime(self._date.year, date.month, date.day-1)
+                else:
+                    raise ValueError('error ')
+
+            if self._date > newdate or self._date+self.duration<newdate:
+                self.active = False
+            else:
+                self.active = True
+
 
     def _get_name(self):
         return self._name
@@ -186,7 +200,7 @@ class Event(object):
 
 class Events(object):
     """Define a list of events.
-    
+
     To be used within a :class:`SimulationInterface` class.
 
     .. doctest::
@@ -206,13 +220,13 @@ class Events(object):
         >>> e.new_event('test', datetime.datetime(2000,4,15), datetime.timedelta(10))
         >>> assert e.test.duration == e.events[0].duration
 
-    
+
     """
     def __init__(self):
         """
-        
+
         :attributes:
-        
+
             * :attr:`events` a list of :class:`~openalea.plantik.calendar.Event` instances
         """
         self.events = []
@@ -237,7 +251,7 @@ class Events(object):
         self.__setattr__(name, e)
 
     def remove_event(self, name):
-        """remove an event from the list of events 
+        """remove an event from the list of events
 
         :param name: the event's name
         """

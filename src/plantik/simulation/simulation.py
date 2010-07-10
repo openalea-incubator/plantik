@@ -61,7 +61,7 @@ class SimulationInterface(object):
         # setup a event list with an example, the starting date
         self.events = Events()
         self.events.new_event('starting_date', datetime.datetime(2000,1,1), datetime.timedelta(1), periodic=False)
-        
+
         #: read-only attribute (in days using datetime.timedelta)
         self._time_elapsed = datetime.timedelta(0.)
 
@@ -76,15 +76,22 @@ class SimulationInterface(object):
         return self._start_year
     start_year = property(fget=_get_start_year, 
                     doc="returns startin year of the simu")
-    
+
     def _get_date(self):
         return self.calendar.date
     date = property(fget=_get_date, 
                     doc="returns date from calendar instance")
-    
+
     def _get_time_elapsed(self):
         return self._time_elapsed
     time_elapsed = property(fget=_get_time_elapsed, 
+                            doc="returns time elapsed since simulation began")
+
+    def _get_dt(self):
+        return self.calendar.dt
+    def _set_dt(self, dt):
+        self.calendar.dt = dt
+    dt = property(fget=_get_dt, fset=_set_dt,
                             doc="returns time elapsed since simulation began")
 
 
@@ -98,7 +105,7 @@ class SimulationInterface(object):
         :returns: True if we switched to a new year while advancing current time by dt
         """
         new_year = self.calendar.advance()
-        self._time_elapsed += self.calendar.dt
+        self._time_elapsed += self.dt
 
         for event in self.events.events:
             event.set_active(self.date)
