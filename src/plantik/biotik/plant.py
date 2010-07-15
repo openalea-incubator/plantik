@@ -199,9 +199,9 @@ class Plant(object):
             pipe_ratio = (self.R * self.pipe_fraction) / self.dV
         else:
             pipe_ratio = 0.
-        print 'dv=',self.dV
-        print 'pipe ratio=', pipe_ratio
-        print 'R=',self.R
+        #print 'dv=',self.dV
+        #print 'pipe ratio=', pipe_ratio
+        #print 'R=',self.R
         
         self.pipe_ratio_v.append(pipe_ratio)
         self.pipe_fraction_v.append(self.pipe_fraction)
@@ -218,9 +218,9 @@ class Plant(object):
             self.pipe_fraction = 0.1
         if self.pipe_fraction>=1:
             self.pipe_fraction = 0.9
-        print 'target pipe fraction=',self.pipe_fraction
+        #print 'target pipe fraction=',self.pipe_fraction
         self.R -= self.dV * pipe_ratio 
-        print 'new R=', self.R
+        #print 'new R=', self.R
         for elt in self.lstring:
             if elt.name in ['I']:
                 elt[0].radius += (elt[0]._target_radius - elt[0].radius) * pipe_ratio
@@ -235,15 +235,12 @@ class Plant(object):
         
         from openalea.mtg.aml import *
         Activate(self.mtg)
-        
-        
         branch_ids = VtxList(2)
-        
         # calculate the total length
         internode_ids = [Components(x,Scale=4) for x in branch_ids]
         length = [[sum([self.mtg.property('Internode')[id].length for id in y if self.mtg.class_name(id)=='I'])]  for y in internode_ids]
         for vid,length in zip(branch_ids, length):
-           self.mtg.property('Branch')[vid].length = length
+           self.mtg.property('Branch')[vid].length = length[0]
            
         for vid in branch_ids:
             first_id = Components(vid, Scale=4)[0]
