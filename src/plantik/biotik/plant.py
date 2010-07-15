@@ -136,8 +136,7 @@ class Plant(object):
         
         self.counter = DataCounter(options)
         self.dv = 0
-        self.pipe_fraction = 0.1
-        self.pipe_fraction_v = [self.pipe_fraction]
+        self.pipe_fraction = 1
         self.pipe_ratio_v = [0.]
         
     def __str__(self):
@@ -149,7 +148,7 @@ class Plant(object):
     def plot(self):
         self.counter.plot()
         self.DARC.plot()
-        self.plot_order()
+        #self.plot_order()
         
                  
     #def plot_order(self):
@@ -199,32 +198,23 @@ class Plant(object):
             pipe_ratio = (self.R * self.pipe_fraction) / self.dV
         else:
             pipe_ratio = 0.
-        #print 'dv=',self.dV
-        #print 'pipe ratio=', pipe_ratio
-        #print 'R=',self.R
+        print 'dv=',self.dV
+        print 'pipe ratio=', pipe_ratio
+        print 'R=',self.R
         
         self.pipe_ratio_v.append(pipe_ratio)
-        self.pipe_fraction_v.append(self.pipe_fraction)
-        
         if self.dV != 0:
             if pipe_ratio > 1:
-                pipe_ratio = 1
-                self.pipe_fraction -=0.1
-            else:
-                self.pipe_fraction +=0.1
-        
-            
-        if self.pipe_fraction<0.1:
-            self.pipe_fraction = 0.1
-        if self.pipe_fraction>=1:
-            self.pipe_fraction = 0.9
+                pipe_ratio = 1            
         #print 'target pipe fraction=',self.pipe_fraction
         self.R -= self.dV * pipe_ratio 
         #print 'new R=', self.R
         for elt in self.lstring:
             if elt.name in ['I']:
                 elt[0].radius += (elt[0]._target_radius - elt[0].radius) * pipe_ratio
-        
+
+
+
         self.time.append(time_elapsed)
         
 
