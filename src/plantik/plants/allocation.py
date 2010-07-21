@@ -55,7 +55,7 @@ class Allocation():
         self.allocated = []
         for a in self.lstring:
             if a.name in self.sinks:
-                allocated = min(a[0].demand/self.D*self.R, a[0]._demand_initial) * self.dt
+                allocated = min(a[0].demand/self.D*self.R, a[0].initial_demand) * self.dt
                 a[0].allocated += allocated
                 self.allocated.append(allocated)
         return sum(self.allocated)
@@ -97,7 +97,7 @@ class Allocation():
 
 
         for index in indices:
-            allocated = min(self.R, self.lstring[int(sink_indices[int(index)])][0]._demand_initial)
+            allocated = min(self.R, self.lstring[int(sink_indices[int(index)])][0].initial_demand)
             self.R -= allocated
             self.lstring[int(sink_indices[int(index)])][0].allocated += allocated
             self.allocated.append(allocated)

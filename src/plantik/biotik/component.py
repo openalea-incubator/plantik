@@ -158,8 +158,10 @@ class ComponentInterface(object):
                     
     
     def _get_initial_demand(self):
-        return self._demand
-    initial_demand = property(fget=_get_initial_demand, 
+        return self._initial_demand
+    def _set_initial_demand(self, d):
+        self._initial_demand = d
+    initial_demand = property(fget=_get_initial_demand,fset=_set_initial_demand, 
                       doc="initial demand of the component")                
     
     def _get_resource(self):

@@ -1,5 +1,6 @@
 from openalea.plantik.biotik.component import ComponentInterface
 from openalea.plantik.tools.plot import CheckVariables
+from openalea.plantik.biotik.context import Context
 
 
 
@@ -10,7 +11,8 @@ class Branch(ComponentInterface):
 
 
     """
-    def __init__(self, birthdate=None, id=None, min_radius=0.001):
+    def __init__(self, birthdate=None, id=None, min_radius=0.001,
+                 order=0, path=1, rank=1):
         """
 
         :param initial_resource: the amount of initial resource/biomass of
@@ -34,7 +36,10 @@ class Branch(ComponentInterface):
         for var in self.variables:
             self.__setattr__(var+'_v', [])
         self.save_data_product()
-        
+        self.context = Context(rank=rank, order=order, path=path)
+        self.internode_counter = 0.
+        self.growthunit_counter = 0.
+
         #self.radius = 0.
 
     def save_data_product(self):
@@ -97,7 +102,8 @@ class GrowthUnit(ComponentInterface):
 
 
     """
-    def __init__(self, birthdate=None, id=None, min_radius=0.001):
+    def __init__(self, birthdate=None, id=None, min_radius=0.001, 
+                 order=0, path=1, rank=1):
         """
 
         :param initial_resource: the amount of initial resource/biomass of
@@ -116,7 +122,9 @@ class GrowthUnit(ComponentInterface):
 
         self._length = 0.
         self._radius = min_radius
-
+        self.context = Context(rank=rank, order=order, path=path)
+        self.internode_counter = 0.
+        
 
     def _getRadius(self):
         return self._radius
@@ -125,9 +133,9 @@ class GrowthUnit(ComponentInterface):
     radius = property(_getRadius, _setRadius, None, "Radius's Docstring")
 
     def _getLength(self):
-        return self._radius
+        return self._length
     def _setLength(self, value):
-        self._radius = value
+        self._length = value
     length = property(_getLength, _setLength, None, "Length Docstring")
 
     def update(self, dt):

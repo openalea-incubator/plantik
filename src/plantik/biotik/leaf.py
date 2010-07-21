@@ -204,20 +204,22 @@ class Leaf(ComponentInterface):
     """
     petiole_radius = 0.0005
     def __init__(self, birthdate=None, 
-                 rank=1, order=0, path=1, id=None, maturation=10, 
+                 rank=1, order=0, path=1, id=None, maturation=21, 
                  internode_vigor=1., maintenance=0., resource=0.,
-                 growth_function='sigmoid'):
+                 growth_function='sigmoid', efficiency_method='constant'):
                
         self.context = Context(rank=rank, order=order, path=path)
         ComponentInterface.__init__(self, label='Leaf', 
                                     birthdate=birthdate, id=id)
         #use _ to access to this inherited attribute
         self._resource = resource
+        self.current_resource = 0.
         self.growth_rate = 0.5
-        self.maturity = 21. # in days
+        self.maturity = maturation # in days
         self.radius_min = 0.0005
         # leaf min must correspond to internode length min so that leafmaxarea>-leafminarea
         self.area_min = 1. * 0.01 * 0.01   # 1 cm^2 changed into  m^2
+        self.internode_vigor = internode_vigor
         self.area_max = 30 * 0.01 * 0.01 * internode_vigor   # 30 cm^2 changed into m^2
         self._radius = self.radius_min
         self._area = GrowthFunction(self.area_min,
@@ -225,7 +227,7 @@ class Leaf(ComponentInterface):
                                    maturation=self.maturity,
                                    growth_rate=self.growth_rate,
                                    growth_function=growth_function)
-
+        self.father_radius = 0
         self.maintenance = maintenance # cost to maintain the elt alive
    
         self.mass_per_area = 220. #g/m^2
@@ -233,14 +235,19 @@ class Leaf(ComponentInterface):
         
         self.lg = 0.
         #data product
-        self.variables = ['age', 'area', 'radius']
+        self.variables = ['age', 'area', 'radius', 'resource']
+        self.variable_labels = ['age', 'area', 'petiole radius', 'resource']
         for var in self.variables:
             self.__setattr__(var+'_v', [])
         self.save_data_product()
+        self.efficiency_method = efficiency_method
+        self._leaf_efficiency = 1.
         """self.time_v = [birthdate]
         self.size_v = [self.size]
         self.resource_v = [self.resource]
         """
+        self.m1 = 15.
+        self.m2 = 150
 
     def update(self, dt):
         super(Leaf, self).update(dt)
@@ -251,7 +258,7 @@ class Leaf(ComponentInterface):
         res += self.context.__str__()
         res += title('other attributes')
         res += ' - demand=%s' % self._demand
-        res += ' - resource=%s' % self._resource
+        res += ' - resource=%s' % self.resource
         res += ' - allocated=%s' % self._allocated
         res += ' - maintenance=%s' % self._maintenance
         
@@ -262,7 +269,7 @@ class Leaf(ComponentInterface):
         self.age_v.append(self.age.days)
         self.area_v.append(self.area)
         self.radius_v.append(self.radius)
-        
+        self.resource_v.append(self.current_resource)
         
     """
         def demand_calculation(self):
@@ -280,9 +287,16 @@ class Leaf(ComponentInterface):
         return self.demand
 
     def resource_calculation(self):
-        return self.resource * self.area / self.area_max 
+        self.current_resource = self.resource * self.area / self.area_max * self.leaf_efficiency()
+        return self.current_resource 
         #return self.mass * self.resource * dt
 
+    def leaf_efficiency(self):
+        if self.efficiency_method == 'constant':
+            return 1.
+        elif self.efficiency_method == 'sigmoid':
+            from math import exp
+            return 1./(1+exp(0.5*(self.m1-self.age.days))) / (1.+exp(0.3*(self.age.days-self.m2)))
     
     def __setstate__(self, data):
         self.__dict__.update(data)
@@ -313,14 +327,15 @@ class Leaf(ComponentInterface):
         if clf is True:
             pylab.figure()
             pylab.clf()
-        for variable in _variables:
-            pylab.plot(self.age_v, getattr(self, '%s_v' % variable), symbol)
-            pylab.xlabel('time since birthdate')
-            pylab.ylabel('%s of this %s' % (variable, self.label))
-            pylab.grid(True)
-            if show==True:
-                pylab.show()
-            pylab.legend()
-            pylab.savefig('test_%s_%s_%s.png' % (self.label, tag, variable))
+        for variable, label in zip(_variables, self.variable_labels):
+            if variable != 'age':
+                pylab.plot(self.age_v, getattr(self, '%s_v' % variable), symbol, label=label)
+                pylab.xlabel('time since birthdate')
+                pylab.ylabel('%s of this %s' % (variable, self.label))
+                pylab.grid(True)
+        if show==True:
+            pylab.show()
+        pylab.legend()
+        pylab.savefig('test_%s_%s_%s.png' % (self.label, tag, variable))
             
     
