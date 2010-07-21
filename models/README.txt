@@ -1,1 +1,1 @@
-experiments1 is an example of models written in Lpy that uses plantik
+* pruning directory contains a complex Lsystem that uses all plantik functionalities to show an example of apple tree model with pruning capabilities.

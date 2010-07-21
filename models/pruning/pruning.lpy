@@ -1,12 +1,12 @@
-__revision__ = " $Id: experiment1.lpy 9261 2010-07-10 15:41:42Z cokelaer $ "
+__revision__ = " $Id: experiment1.lpy 9287 2010-07-16 13:09:31Z cokelaer $ "
 import random
 import os
 from math import acos, pi
 import copy
 import time
 from openalea.fractalysis.light.directLight import diffuseInterception
-from openalea.plantgl.math._pglmath import Vector3
-from openalea.plantgl.scenegraph._pglsg import AxisRotation
+#from openalea.plantgl.math._pglmath import Vector3
+#from openalea.plantgl.scenegraph._pglsg import AxisRotation
 from openalea.plantgl.all import Sphere, Viewer, Box
 
 from openalea.plantik.simulation.simulation import Simulation
@@ -44,7 +44,7 @@ counter = 0
 RATIO = 100.
 import openalea.stocatree
 stocatree_path = os.path.join(openalea.stocatree.__path__[0], '..', '..','share','data', )
-stride_number = 3
+stride_number = 10
 leaf_surface = create_surface(os.path.join(stocatree_path, 'leaf_surface.s'), stride_number, stride_number)
 
 
@@ -67,7 +67,7 @@ STOPYEAR = STARTYEAR + options.general.max_number_years
 # R must be > metamer_cost * number of initial metamer
 R = options.root.initial_resource
 RESERVE = 0.
-plant = Plant(options=options, revision=__revision__)
+plant = Plant(options=options, revision=__revision__, pipe_fraction=0.5)
 
 module P(Plant): scale=1
 module B(Branch): scale=2
@@ -207,6 +207,30 @@ def EndEach(lstring, scene):
       Viewer.redrawPolicy = False
       Viewer.camera.lookAt(pos,pos+h)      
       Viewer.redrawPolicy = True
+
+    #required for the homomorphism to nicely represent the first
+    # element as a cylinder with same base and top radius until a
+    # better solution is found
+    lstring[0][0].radius = lstring[1][0].radius
+    
+    # anothor homomorphism trick: the leaf must be shifted to fit the
+    # internode radius on which they are put. Similarly for the apices
+    #account for 25% of the CPU time 
+    if options.geometry.realistic_petiole == True:
+        from openalea.mtg.aml import *
+        g = Activate(lstring[0][0].mtg)
+        idleaves = [id for id in g.vertices() if g.class_name(id) in ['L']]
+        for idleaf in idleaves:
+            id = Father(idleaf)
+            g.property('Leaf')[idleaf].father_radius = g.property('Internode')[id].radius
+        idleaves = [id for id in g.vertices() if g.class_name(id) == 'A']
+        for idleaf in idleaves:
+            try:
+              id = Father(idleaf)
+              g.property('Apex')[idleaf].father_radius = g.property('Internode')[id].radius
+            except:
+              pass
+
     useGroup(1)
 
 
@@ -217,10 +241,12 @@ def End(lstring):
     plant.duration = time2-time1
 
     print 'Simulation took %s.' % (time2-time1), ' Creating figures...'
-    plant.lstring = lstring_extract(lstring, label=['Leaf', 'Root', 'Apex','Internode'])
+    plant.lstring = lstring_extract(lstring, label=['Leaf', 'Root', 'Apex','Internode', 'Branch', 'GrowthUnit'])
     #,'Apex','Internode', 'Leaf'])
-    print plant.lstring
-    del plant.mtg
+    #print plant.lstring
+    plant.mtg
+    
+    plant.mtg.properties()['geometry']={}
     import pickle
     pickle.dump(plant, open(options.general.filename_prefix+'_data.dat','w'))
     if options.misc.post_analysis is True:
@@ -236,11 +262,9 @@ def End(lstring):
     #outputmtg = open(options['filename_prefix'] + '.mtg', 'w')
     #outputmtg.write(res)
     #outputmtg.close()
-    
 
 
-Axiom: P(plant)R(root.Root(initial_resource=options.root.initial_resource, id=1,birthdate=simulation.date))B(Branch(birthdate=simulation.date))U(GrowthUnit(birthdate=simulation.date))A(Apex(bud_break_year=STARTYEAR, demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron))
-
+Axiom: P(plant) B(Branch(birthdate=simulation.date, order=1, rank=1)) U(GrowthUnit(birthdate=simulation.date,order=1, rank=1)) A(Apex(bud_break_year=STARTYEAR, demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron))
 
 derivation length: int(options.general.max_step)
 
@@ -257,15 +281,18 @@ A(a):
   # if we want to restrict the maximum order, we do nothing but
   # we need to move the allocated resources to the global pool
   if a.context.order>options.misc.order_max:
-    a._demand_initial = 0
+    a.initial_demand = 0
     plant.R+=a.allocated
     a.allocated = 0.
+    a.growing = False
     produce A(a)  
   
   # if current plastochorn of the apex is less than plastochron
   # nothing to be done, otherwise, reset the internal plastochron anc continue
+  #todo <= or < ?
   if a.current_plastochron <= options.apex.plastochron:
-    produce A(a)
+    a.growing = False
+    produce A(a)    
   else:        
     a.current_plastochron = dt
     
@@ -285,7 +312,8 @@ A(a):
     if options.misc.reset_resource:
         plant.R += a.allocated
         a.allocated = 0.
-    produce A(a) 
+    a.growing = False
+    produce A(a)
   else:
     demand = 0.33
     allocation = min(1, a.allocated)
@@ -322,28 +350,59 @@ A(a):
       }
     leaf_args = {
       'resource':options.leaf.resource,
+      'maturation':options.leaf.maturation,
+      'growth_function':options.leaf.growth_function,
+      'efficiency_method':options.leaf.efficiency_method,
       'internode_vigor': length/Internode.length_max,
       'birthdate':simulation.calendar.date
       }
       
     branch_args = {
-      'birthdate':simulation.calendar.date
+      'birthdate':simulation.calendar.date,
+      'order': a.context.order+1,
+      'rank': a.context.rank-1,
+      'path': a.context.path,
+      
     }
     growth_unit_args = {
-      'birthdate':simulation.calendar.date
+      'birthdate':simulation.calendar.date,
+      'order': a.context.order+1,
+      'rank': a.context.rank,
+      'path': a.context.path,
+      
     }
 
-    state = "V"
     
-    if options.geometry.symmetric_tree:
-      nproduce I(Internode(**internode_args)) [L(Leaf(**leaf_args))] [&(options.geometry.branching_angle) B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args)) A(Apex(**apex_args))][&(-options.geometry.branching_angle) B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args)) A(Apex(**apex_args))]
+    #print a.interruption , a.growing
+    if a.internodes == 0:
+        nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
     else:
-      nproduce I(Internode(**internode_args)) [L(Leaf(**leaf_args))] [&(options.geometry.branching_angle) B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args)) A(Apex(**apex_args))]
+        if a.interruption >= options.growth_unit.latency and a.growing == False:
+            # then we've been in a latent state. Since, we are going to grow again, 
+            # UC must be added
+            #if a.internodes == 0:
+            #    nproduce B(Branch(**branch_args))
+            nproduce U(GrowthUnit(**growth_unit_args))
+
       
+      
+    if options.geometry.symmetric_tree:
+        nproduce I(Internode(**internode_args)) [L(Leaf(**leaf_args))] [&(options.geometry.branching_angle)  A(Apex(**apex_args))][&(-options.geometry.branching_angle)  A(Apex(**apex_args))]
+    else:
+        nproduce I(Internode(**internode_args)) [L(Leaf(**leaf_args))] [&(options.geometry.branching_angle)  A(Apex(**apex_args))]
+
+    a.internodes += 1  
+    a.growing = True
+    a.interruption = 0
+    #end of production
+  
   if options.misc.reset_resource:
     plant.R+=a.allocated
     a.allocated = 0.
+    
   produce A(a)
+    
+
 
 endgroup
 
@@ -384,8 +443,8 @@ A(a):
     elif options.general.colorcode=='normal':
       colorcode = 5 
     elif options.general.colorcode=='allocated':
-      colorcode = 10 + int(a.allocated/a._demand_initial*10.)
-    elif options['colorcode']=='vigor':
+      colorcode = 10 + int(a.allocated/a.initial_demand*10.)
+    elif options.general.colorcode=='vigor':
       colorcode = 10 + int(a.vigor*10.)
     elif options.general.colorcode=='length':
       colorcode = 5
@@ -393,7 +452,7 @@ A(a):
       colorcode=5
     else:
       raise ValueError('colorcode in config.ini must be in normal, order')
-    produce SetColor(colorcode) Sphere(max(0.4, a.allocated)/300. * RATIO) 
+    produce SetColor(colorcode) +(90)  f(options.geometry.radius_scale*a.father_radius*100+a.radius) +(-90) Sphere(max(0.4, a.allocated)/300. * RATIO) 
     #Label('   ' +str(
 I(i):
   
@@ -401,7 +460,7 @@ I(i):
       colorcode = i.context.order+11
     elif options.general.colorcode=='normal':
       colorcode = 1
-    elif options.general.colorcodein ['allocated']:
+    elif options.general.colorcode =='allocated':
       colorcode = 1
     elif options.general.colorcode=='length':
       colorcode = int(i.length/Internode.length_max *10) +10
@@ -436,7 +495,7 @@ L(c):
       norm = 0.08
       #print (c.size/c.leaf_max_area),  c.lg/norm ,  (0.0030/c.leaf_max_area)
       
-      color = int(53. - (53-36.) * (c.area/c.leaf_max_area) * c.lg/norm * (0.0030/c.leaf_max_area))
+      color = int(53. - (53-36.) * (c.area/c.area_max) * c.lg/norm * (0.0030/c.area_max))
       #print 'llllgggg', c.lg, c.size, c.size/c.leaf_max_area, color
       if color<=35 : print 'color', color
       if color>=54 : print 'color', color
@@ -447,22 +506,32 @@ L(c):
       color = 2
     if options.geometry.leaf_view == True:
       #produce SetColor(color) +(90)  ~l(0.8*c.size*10.*RATIO) +(-90) +(options.geometry.branching_angle)
-      r1 = (random.random()-0.5)*0.
-      r2 = (random.random()-0.5)*20.
-      r2=90
       if c.age.days>200:
         produce Cut
       else:
-        produce SetColor(color) +(r2)^(90+r1)  SetWidth(0.0005*RATIO) F(0.015*RATIO) PglShape(leaf_surface, 10*c.area*RATIO) +(-r2)^(-90+r1) +(options.geometry.branching_angle)
+        #vertical -> theta=0;  horizontal theta=90
+        theta = 90
+        # apex and leaf at the same place use phi=0
+        phi = 0.
+        produce SetColor(color) +(theta)^(phi) SetWidth(options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*100*options.geometry.radius_scale) F(options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
           #produce SetColor(color)+(60) RollToVert()      -(60) +(branching_angle)
 
+B(b):
+    if options.geometry.branch_view:
+        nproduce SetColor(4) F(.3, b.radius*100)
 
-
-
-R(r):
+U(u):
+    if options.geometry.growth_unit_view:
+        nproduce SetColor(3)F(.3, u.radius*100)
+    
+P(p):
     # place a 10 cm support
-    nproduce SetWidth(0.1*RATIO)
-    produce F(0.001*RATIO, 0.5)
+    pass
+    #nproduce SetWidth(10)
+    # the radius here is the radius of the next component (first branch) which
+    # must be filled outside (e.g. in the EndEach function)
+    #nproduce F(0.001*RATIO, p.radius*100)
+    
 
 #Wall:
 #    produce [;(6)[@M(-10,0,15)@g(Box(15,0.5,15))][@M(5,0,30)@g(Box(15,15,0.5))][@M(20,0,15)@g(Box(15,0.5,15))][@M(5,15,15)@g(Box(0.5,15,15))][@M(5,-15,5)]]
@@ -476,10 +545,6 @@ def __initialiseContext__(context):
 	from openalea.plantgl.scenegraph import Material,ImageTexture,Color3
 	context.turtle.setMaterial(5,Material('Default',Color3(3,5,2),32,Color3(40,40,40),Color3(0,0,0),1,0))
 	context.turtle.setMaterial(6,Material('Default',Color3(0,0,0),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(7,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(8,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(9,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(10,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
 	context.turtle.setMaterial(11,Material('Default',Color3(0,0,134),0.402985,Color3(67,67,67),Color3(29,29,29),1,0))
 	context.turtle.setMaterial(12,Material('APPID_6_201601160',Color3(31,1,119),0.431929,Color3(63,63,63),Color3(25,25,25),1,0))
 	context.turtle.setMaterial(13,Material('APPID_11_201482848',Color3(62,2,104),0.460873,Color3(60,60,60),Color3(21,21,21),1,0))
@@ -490,21 +555,6 @@ def __initialiseContext__(context):
 	context.turtle.setMaterial(18,Material('APPID_36_197919128',Color3(217,8,29),0.605594,Color3(43,43,43),Color3(3,3,3),1,0))
 	context.turtle.setMaterial(19,Material('Default',Color3(249,10,14),0.634538,Color3(40,40,40),Color3(0,0,0),1,0))
 	context.turtle.setMaterial(20,Material('Default',Color3(206,1,5),0.776699,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(21,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(22,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(23,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(24,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(25,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(26,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(27,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(28,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(29,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(30,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(31,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(32,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(33,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(34,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
-	context.turtle.setMaterial(35,Material('Default',Color3(80,80,80),2,Color3(40,40,40),Color3(0,0,0),1,0))
 	context.turtle.setMaterial(36,Material('Default',Color3(0,218,32),0.733945,Color3(40,40,40),Color3(0,0,0),1,0))
 	context.turtle.setMaterial(37,Material('APPID_3_205259680',Color3(15,206,30),0.72745,Color3(40,40,40),Color3(0,0,0),1,0))
 	context.turtle.setMaterial(38,Material('APPID_3_183101784',Color3(30,195,29),0.720955,Color3(40,40,40),Color3(0,0,0),1,0))
