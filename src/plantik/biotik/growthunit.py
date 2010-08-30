@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""Branch module
+"""GrowthUnit module
 
-.. module branch
-    :synopsis: Branches utilities and classes
+.. module growthunit
+    :synopsis: GrowthUnites utilities and classes
 
 .. topic:: summary
 
-    Branches utilities and classes
+    GrowthUnites utilities and classes
 
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
+    :Revision: $Id$
     :Usage:
-        >>> from openalea.plantik.biotik.branch import *
+        >>> from openalea.plantik.biotik.growthunit import *
 
 .. testsetup::
 
-    from openalea.plantik.biotik.branch import *
+    from openalea.plantik.biotik.growthunit import *
 
 """
 from openalea.plantik.biotik.component import *
@@ -27,13 +27,13 @@ from openalea.plantik.biotik.context import Context
 
 
 
-class Branch(ComponentInterface):
-    """Branch class
+class GrowthUnit(ComponentInterface):
+    """GrowthUnit class
 
     Specialised version of :class:`~openalea.plantik.biotik.component.ComponentInterface`
-    dedicated to Branches.
+    dedicated to GrowthUnites.
 
-    Branch class does not compute anything special, it mainly serves as storage for various
+    GrowthUnit class does not compute anything special, it mainly serves as storage for various
     information. The update of the length and radius is made in the :mod:`plants` module.
 
     .. warning:: 
@@ -44,11 +44,11 @@ class Branch(ComponentInterface):
 
     :Example:
 
-    >>> from openalea.plantik.biotik.branch import *
-    >>> branch = Branch()
-    >>> branch.radius
+    >>> from openalea.plantik.biotik.growthunit import *
+    >>> gu = GrowthUnit()
+    >>> gu.radius
     0.001
-    >>> branch.variables.radius.values
+    >>> gu.variables.radius.values
     [0.001]
 
 
@@ -75,17 +75,17 @@ class Branch(ComponentInterface):
         :param int store_data: 
 
         :attributes:
-            * :attr:`length`: total length of the branch in meters
-            * :attr:`radius`:  radius of at the base of the branch (see plants module)
+            * :attr:`length`: total length of the growth unit in meters
+            * :attr:`radius`:  radius of at the base of the growth unit (see plants module)
             * those inherited by :class:`~openalea.plantik.biotik.component.ComponentInterface`: 
               :attr:`age`, :attr:`demand`, :attr:`birthdate`, ...
-            * :attr:`internode_counter`  count number of internodes in this branch
-            * :attr:`growthunit_counter` count number of growth units in this branch
+            * :attr:`internode_counter`  count number of internodes in this growth unit
+            * :attr:`growthunit_counter` count number of growth units in this growth unit
             * :attr:`variables` is a :class:`CollectionVariables` instance containing the :attr:`age`, 
               :attr:`radius` and :attr:`length` at each time step
         """
         self.context = Context(rank=rank, order=order, path=path)
-        ComponentInterface.__init__(self, label='Branch', birthdate=birthdate, id=id)
+        ComponentInterface.__init__(self, label='GrowthUnit', birthdate=birthdate, id=id)
 
         self.store_data = store_data
         self._length = 0.
@@ -97,26 +97,24 @@ class Branch(ComponentInterface):
         self.variables.add(SingleVariable(name='radius', unit='meters', values=[self.radius]))
 
 
-        self.internode_counter = 0. # count number of internodes in this branch
-        self.growthunit_counter = 0.# count number of growth units in this branch
+        self.internode_counter = 0. # count number of internodes in this gu
 
     def _getRadius(self):
         return self._radius
     def _setRadius(self, value):
         if value< self._radius:
-            print "radius decreased in branch update!!"
+            print "radius decreased in gu update!!"
         self._radius = value
-    radius = property(_getRadius, _setRadius, None, "getter/setter to the branch radius")
+    radius = property(_getRadius, _setRadius, None, "getter/setter to the gu radius")
 
     def _getLength(self):
         return self._length
     def _setLength(self, value):
         self._length = value
-    length = property(_getLength, _setLength, None, "getter/setter to the branch length")
+    length = property(_getLength, _setLength, None, "getter/setter to the gu length")
 
     def update(self, dt):
-        """Update the branch characteristics at each time step
-
+        """Update the gu characteristics at each time step
 
         Update the :attr:`age` of the component by **dt**
         if **store_data** is True, it also append the age,
@@ -124,7 +122,7 @@ class Branch(ComponentInterface):
 
         :param float,int,datetime.timedelta dt: in days
         """
-        super(Branch, self).update(dt)
+        super(GrowthUnit, self).update(dt)
         if self.store_data is True:
             self.variables.age.append(self.age.days)
             self.variables.length.append(self.length)
@@ -132,11 +130,11 @@ class Branch(ComponentInterface):
 
 
     def demandCalculation(self, **kargs):
-        """no demand for a branch (i.e., zero)"""
+        """no demand for a gu (i.e., zero)"""
         pass
 
     def resourceCalculation(self, **kargs):
-        """no resource for a branch (i.e., zero)"""
+        """no resource for a gu (i.e., zero)"""
         pass
 
     def plot(self, variables=['length', 'radius'], show=True, **args):
@@ -150,8 +148,8 @@ class Branch(ComponentInterface):
             :width: 50%
             :include-source:
 
-            from openalea.plantik.biotik.branch import *
-            b = Branch()
+            from openalea.plantik.biotik.growthunit import *
+            b = GrowthUnit()
             for v in range(1,100):
                 b.radius = (v*0.001)**0.5
                 b.length = v*0.01
