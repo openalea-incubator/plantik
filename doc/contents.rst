@@ -31,6 +31,7 @@ Documentation
 
     User Guide<user/index.rst>   
     Reference Guide<user/autosum.rst>
+    admin.rst
 
 - A `PDF <../latex/PlanTiK.pdf>`_ version of |PlanTiK| documentation is 
   available.
