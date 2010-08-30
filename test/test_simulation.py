@@ -4,12 +4,18 @@ import datetime
 
 def test_simulation():
 
-    sim = Simulation(dt=5)
+    # let us create a simulation and check that elapsed days is zero
+    sim = Simulation(starting_date=2000, dt=5)
     assert sim.time_elapsed.days == 0
-    assert sim.start_year == 2000
-    # add an event
-    sim.events.new_event('bud_break', datetime.datetime(2000,4,15), datetime.timedelta(10))
+    
+    #by default there is an event called 'starting_date' starting 1jan2000. 
+    # Let us check its year
+    assert sim.events.starting_date.starting_date.year == 2000
 
+    # now, let us add an event
+    sim.events.add_event('bud_break', datetime.datetime(2000,4,15), datetime.timedelta(10))
+
+    # and advance to the event starting time
     sim.calendar.dt = 30
     sim.advance()    # jump to jebruary
     sim.advance()    # jump to march

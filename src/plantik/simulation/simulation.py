@@ -1,18 +1,31 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""
+"""Simulation module
+
+.. module:: simulation
+    :synopsis: Classes to design simulation protocols
+
+
 .. topic:: simulation.py status
 
-    Provide standard classes to design simulation protocols
+    Classes to design simulation protocols
 
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
+    :Usage:
+        >>> from openalea.plantik.simulation.simulation import *
+
+.. testsetup::
+
+    from openalea.plantik.simulation.simulation import *
+
 """
 
 import datetime
 from openalea.plantik.simulation.calendar import Calendar, Events, Event
+
 
 class SimulationInterface(object):
     """An abstract base class to design simulations.
@@ -21,17 +34,21 @@ class SimulationInterface(object):
     class and a list of events :class:`~openalea.plantik.simulation.calendar.Events`
     to ease management of simulations.
 
-    :param dt: the time step in days.
-    :param starting_year: the starting year
+    :param dt: the time step in days (default is 1
+    :param starting_date: the starting date (default is year 2000)
+    :param ending_date: the ending date (default is year 2010)
 
-    :attributes: 
+    :type starting_date: float or integer
+    :type ending_date: float or integer
+
+    :attributes:
         * :attr:`calendar` is an instance of :class:`~openalea.plantik.simulation.calendar.Calendar`
         * :attr:`events` is an instance of :class:`~openalea.plantik.simulation.calendar.Events`
-        * :attr:`date` is an instance of :class:`datetime.datetime` (alias 
+        * :attr:`date` is an instance of :class:`datetime.datetime` (alias
           to calendar.date) and is read-only.
-        * :attr:`time_elapsed` is an instance of :class:`datetime.timedelta` and is 
+        * :attr:`time_elapsed` is an instance of :class:`datetime.timedelta` and is
           read-only.
-        * :attr:`starting_year` read-only.
+        * :attr:`ending_year` read-only.
         * :attr:`dt` read-only. use `calendar.dt` to set another value
 
     ::
@@ -43,39 +60,58 @@ class SimulationInterface(object):
         >>> sim.date
         datetime.datetime(2000, 1, 1, 0, 0)
         >>> import datetime
-        >>> sim.events.new_event('test', datetime.datetime(2000,4,15), datetime.timedelta(1))
+        >>> sim.events.add_event('test', datetime.datetime(2000,4,15), datetime.timedelta(1))
         >>> sim.advance()
         False
         >>> sim.time_elapsed
         datetime.timedelta(10)
 
     """
-    def __init__(self, dt=1., starting_year=2000):
+    def __init__(self, dt=1., starting_date=2000., ending_date=2010):
 
-        # starting year of the simulation
-        self._start_year = starting_year
-        # set up the calendar with dt in days
-        self.calendar = Calendar(year=starting_year)
-        self.calendar.dt = dt
+        self._ending_date = self.convert_fractional_year_to_date(ending_date)
+
+        # set up the calendar, must convert the floating year to a date before
+        date = self.convert_fractional_year_to_date(starting_date)
+        self.calendar = Calendar(year=date.year, month=date.month, day=date.day,
+                                delta_in_days=dt)
+
 
         # setup a event list with an example, the starting date
         self.events = Events()
-        self.events.new_event('starting_date', datetime.datetime(2000,1,1), datetime.timedelta(1), periodic=False)
+        # we store the beginnin of the simulation as an event.
+        self.events.add_event('starting_date', date, datetime.timedelta(1), periodic=False)
 
         #: read-only attribute (in days using datetime.timedelta)
         self._time_elapsed = datetime.timedelta(0.)
 
         #: read-only attribute, alias to calendar.date 
-        self._date = self.calendar.date
+        #self._date = self.calendar.date
+
+    @staticmethod
+    def convert_fractional_year_to_date(year):
+        """returns a timedelta object given a fractional year
+
+        .. note:: this is a static method
+
+        >>> Simulation.convert_fractional_year_to_date(2000.5)
+        datetime.datetime(2000, 7, 1, 12, 0)
+
+        """
+        assert year>=1, "year cannot be less than 1"
+        date = datetime.datetime(int(year), 1, 1)
+        fraction = (year % 1) *365
+        date += datetime.timedelta(fraction)
+        return date
 
     def __str__(self):
         res = "Current time is %s" % str(self._get_date())
         return res
 
-    def _get_start_year(self):
-        return self._start_year
-    start_year = property(fget=_get_start_year, 
-                    doc="returns startin year of the simu")
+    def _get_ending_date(self):
+        return self._ending_date
+    ending_date = property(fget=_get_ending_date, 
+                    doc="returns ending year of the simulation")
 
     def _get_date(self):
         return self.calendar.date
@@ -85,44 +121,47 @@ class SimulationInterface(object):
     def _get_time_elapsed(self):
         return self._time_elapsed
     time_elapsed = property(fget=_get_time_elapsed, 
-                            doc="returns time elapsed since simulation began")
+                            doc="returns time elapsed since simulation began in datetime format")
 
     def _get_dt(self):
         return self.calendar.dt
     def _set_dt(self, dt):
         self.calendar.dt = dt
     dt = property(fget=_get_dt, fset=_set_dt,
-                            doc="returns time elapsed since simulation began")
+                            doc="returns time step datetime format ")
 
 
     def advance(self):
         """increment the calendar time by `dt` and check for events activation
 
-        All events have a starting date and a duration. When the calendar advance, 
+        All events have a starting date and a duration. When the calendar advance,
         we must check whether any events englobe the current time. If so, its `active`
-        status is set to True.
+        status is set to True. See :class:`~openalea.plantik.simulation.calendar.Event`
+        class for details.
 
-        :returns: True if we switched to a new year while advancing current time by dt
+        :returns: True if we switched to a new year while advancing current time by `dt`.
         """
         new_year = self.calendar.advance()
         self._time_elapsed += self.dt
 
         for event in self.events.events:
-            event.set_active(self.date)
-        if new_year==True:
-            return True
-        else:
-            return False
+            event.isactive(self.date)
+
+        return new_year
 
 
 class Simulation(SimulationInterface):
     """ a simple simulation protocol.
-    
-    This is an alias to simulationInterface for the time being
 
+    Simulation is a specialised form of :class:`SimulationInterface`. See
+    :class:`SimulationInterface` for the basic usage.
+
+    Constructor is the same constructor as :class:`~openalea.plantik.simulation.simulation.SimulationInterface` for the time being.
     """
-    def __init(self, dt=1, starting_year=2000):
-        SimulationInterface.__init__(self, dt=dt, starting_year=starting_year)
+    def __init(self, dt=1, starting_date=2000., ending_year=2010):
+        SimulationInterface.__init__(self,
+            dt=dt,
+            starting_date=starting_date,
+            ending_year=ending_year)
 
-    
 
