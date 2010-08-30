@@ -572,10 +572,11 @@ __lpy_code_version__ = 1.1
 
 def __initialiseContext__(context):
 	from openalea.plantgl.scenegraph import Material, Texture2D, ImageTexture,Color3
+	from openalea.plantik import get_shared_data
 	context.turtle.setMaterial(5,Material(name='Default',ambient=Color3(3,5,2),diffuse=32,))
 	context.turtle.setMaterial(6,Material(name='Default',ambient=Color3(0,0,0),))
-	context.turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename='''/home/cokelaer/appletree_texture.jpg'''),))
-	context.turtle.setMaterial(8,Texture2D(name='APPID_7_194245840',image=ImageTexture(filename='''/home/cokelaer/apple_leaf_texture.jpg'''),))
+	context.turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename=get_shared_data('appletree_texture.jpg')),))
+	context.turtle.setMaterial(8,Texture2D(name='APPID_7_194245840',image=ImageTexture(filename='''apple_leaf_texture.jpg'''),))
 	context.turtle.setMaterial(11,Material(name='Default',ambient=Color3(0,0,134),diffuse=0.402985,specular=Color3(67,67,67),emission=Color3(29,29,29),))
 	context.turtle.setMaterial(12,Material(name='APPID_6_201601160',ambient=Color3(31,1,119),diffuse=0.431929,specular=Color3(63,63,63),emission=Color3(25,25,25),))
 	context.turtle.setMaterial(13,Material(name='APPID_11_201482848',ambient=Color3(62,2,104),diffuse=0.460873,specular=Color3(60,60,60),emission=Color3(21,21,21),))
