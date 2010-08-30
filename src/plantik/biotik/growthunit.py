@@ -182,3 +182,15 @@ class GrowthUnit(ComponentInterface):
         if show == True:
             pylab.show()
 
+
+    def __str__(self):
+        from openalea.plantik.tools.misc import title
+        res = self.component_summary()
+        res += self.context.__str__()
+        res += title('other attributes')
+        res +='\n'
+        for name in self.variables.names:
+            res += "%s = %s" % (name, getattr(self, name))
+            res +='\n'
+
+        return res

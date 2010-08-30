@@ -1,4 +1,4 @@
-__revision__ = " $Id: experiment1.lpy 9287 2010-07-16 13:09:31Z cokelaer $ "
+__revision__ = " $Id$ "
 import random
 import os
 from math import acos, pi
@@ -95,6 +95,10 @@ def Start():
                           simulation.calendar.dt.days, 
                           perturbation=options.allocation.perturbation)
   time1 = time.time()
+  from openalea.plantgl.all import Texture2D, ImageTexture
+  context().turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename=get_shared_data('appletree_texture_sym.jpg')),))
+  context().turtle.setMaterial(8,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename=get_shared_data('apple_leaf_texture.jpg')),))
+
 
 def StartEach():
   pass
@@ -189,14 +193,14 @@ def EndEach(lstring, scene):
              mtg1.property('Internode')[vid].radius = diameters[vid]
 
     elif options.pipe.model=='vinci2':
-       radius = {}
-       temp = {'I':'Internode', 'L':'Leaf'}
-       for vid in traversal.pre_order(mtg1, 4):
-           radius[vid] = pow(sum([max(mtg1.property(temp[mtg1.class_name(c)])[c].radius,0.001)**coeff  for c in mtg1.children(vid) if mtg1.class_name(c) in ['I', 'L']]), 1./coeff)
-       for vid, s in radius.iteritems():
-           if mtg1.class_name(vid) in ['I']:
-             mtg1.property('Internode')[vid].target_radius = radius[vid]
 
+        radius = {}
+        temp = {'I':'Internode', 'L':'Leaf'}
+        for vid in traversal.pre_order(mtg1, 4):
+           radius[vid] = pow(sum([max(mtg1.property(temp[mtg1.class_name(c)])[c].radius,0.001)**coeff  for c in mtg1.children(vid) if mtg1.class_name(c) in ['I', 'L']]), 1./coeff)
+        for vid, s in radius.iteritems():
+           if mtg1.class_name(vid) in ['I']:
+              mtg1.property('Internode')[vid].target_radius = radius[vid]
     elif options.pipe.model==None:
       pass
     else:
@@ -279,7 +283,7 @@ def End(lstring):
     #outputmtg.close()
 
 
-Axiom: P(plant) B(Branch()) U(GrowthUnit()) A(Apex(bud_break_year=STARTYEAR, demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data))
+Axiom: P(plant) B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(bud_break_year=STARTYEAR, demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data))
 
 derivation length: int(options.general.max_step)
 
@@ -395,10 +399,14 @@ A(a):
       
     }
     
-    #print a.interruption , a.growing
-    if a.internodes_created == 0:
+    # print a.interruption , a.growing
+    # the first apex is has interruption = 0 at the beginnin of the simulation
+    # since the axiom is BUA, we do not want to redo BU in that particular case
+    if a.internodes_created == 0 and a.context.order!=0 and a.context.path!=1:
         nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
     else:
+        # else, if the apex has already grown but has stopped, we only want to add a U
+        # if time of interruption > latency
         if a.interruption >= options.growth_unit.latency and a.growing == False:
             # then we've been in a latent state. Since, we are going to grow again, 
             # UC must be added
@@ -483,7 +491,10 @@ I(i):
     if options.general.colorcode=='order':
       colorcode = i.context.order+11
     elif options.general.colorcode=='normal':
-      colorcode = 7
+      if options.geometry.texture == True:
+        colorcode = 7
+      else:
+        colorcode = 1
     elif options.general.colorcode =='allocated':
       colorcode = 1
     elif options.general.colorcode=='length':
@@ -506,7 +517,11 @@ I(i):
         
     else:
       raise ValueError('colorcode in config.ini must be in normal, order')
-    nproduce SetColor(colorcode)  
+      
+      
+    #nproduce SetColor(colorcode) TextureScale(3.14*i.radius*RATIO*options.geometry.radius_scale,i.length*RATIO) TextureRotation(0, -137.5*(i.context.path+1),0)
+    nproduce SetColor(colorcode) TextureScale(1,1)
+    #todo ideally the textture should be aligned maybe with TextureTranslation()
     if options.tropism.tropism:
       nproduce @Tp(0,0,-options.tropism.z_tropism) @Ts(options.tropism.elasticity)
     nproduce F(i.length*RATIO, i.radius*RATIO*options.geometry.radius_scale) 
@@ -544,21 +559,15 @@ L(c):
           #produce SetColor(color)+(60) RollToVert()      -(60) +(branching_angle)
 
 B(b):
-    
     if options.geometry.branch_view:
-        nproduce SetColor(12) Frustum(.3, b.radius*100)
+        nproduce SetColor(12) F(1, b.radius*RATIO*options.geometry.radius_scale)
 
 U(u):
     if options.geometry.growth_unit_view:
-        nproduce SetColor(3)Frustum('growthunit',.3, u.radius*100)
+        nproduce SetColor(3)F(.5, u.radius*RATIO*options.geometry.radius_scale)
     
 P(p):
-    # place a 10 cm support
-    pass
-    #nproduce SetWidth(10)
-    # the radius here is the radius of the next component (first branch) which
-    # must be filled outside (e.g. in the EndEach function)
-    #nproduce F(0.001*RATIO, p.radius*100)
+    nproduce  F(0.01,p.radius*RATIO*options.geometry.radius_scale)
     
 
 #Wall:
@@ -572,11 +581,10 @@ __lpy_code_version__ = 1.1
 
 def __initialiseContext__(context):
 	from openalea.plantgl.scenegraph import Material, Texture2D, ImageTexture,Color3
-	from openalea.plantik import get_shared_data
 	context.turtle.setMaterial(5,Material(name='Default',ambient=Color3(3,5,2),diffuse=32,))
 	context.turtle.setMaterial(6,Material(name='Default',ambient=Color3(0,0,0),))
-	context.turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename=get_shared_data('appletree_texture.jpg')),))
-	context.turtle.setMaterial(8,Texture2D(name='APPID_7_194245840',image=ImageTexture(filename='''apple_leaf_texture.jpg'''),))
+	context.turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/appletree_texture_sym.jpg'''),))
+	context.turtle.setMaterial(8,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/apple_leaf_texture.jpg'''),))
 	context.turtle.setMaterial(11,Material(name='Default',ambient=Color3(0,0,134),diffuse=0.402985,specular=Color3(67,67,67),emission=Color3(29,29,29),))
 	context.turtle.setMaterial(12,Material(name='APPID_6_201601160',ambient=Color3(31,1,119),diffuse=0.431929,specular=Color3(63,63,63),emission=Color3(25,25,25),))
 	context.turtle.setMaterial(13,Material(name='APPID_11_201482848',ambient=Color3(62,2,104),diffuse=0.460873,specular=Color3(60,60,60),emission=Color3(21,21,21),))
