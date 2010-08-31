@@ -32,3 +32,23 @@ class testGrowthUnit():
 
     def test_plot(self):
         self.gu.plot(show=False)
+
+    def test_str(self):
+        print self.gu
+
+    def test_internode_counter(self):
+        assert self.gu.internode_counter == 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 1
+        
+
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.internode_counter = 0
+        self.gu.update(1)

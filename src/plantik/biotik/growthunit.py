@@ -3,11 +3,11 @@
 """GrowthUnit module
 
 .. module growthunit
-    :synopsis: GrowthUnites utilities and classes
+    :synopsis: GrowthUnit utilities and classes
 
 .. topic:: summary
 
-    GrowthUnites utilities and classes
+    GrowthUnit utilities and classes
 
     :Code: mature
     :Documentation: mature
@@ -36,9 +36,9 @@ class GrowthUnit(ComponentInterface):
     GrowthUnit class does not compute anything special, it mainly serves as storage for various
     information. The update of the length and radius is made in the :mod:`plants` module.
 
-    .. warning:: 
+    .. warning::
 
-        If the parameter store_data is True, then the :attr:`variables` attributes will store 
+        If the parameter store_data is True, then the :attr:`variables` attributes will store
         the length, radius and age at each time step, which may be costly. Consider to set it to False
         if required.
 
@@ -62,48 +62,69 @@ class GrowthUnit(ComponentInterface):
 
 
     """
-    def __init__(self, birthdate=None, id=None, min_radius=0.001,
+    def __init__(self, birthdate=None, id=None, min_radius=0.001, latency=6,
                  order=0, path=1, rank=1, store_data=True):
         """**Constructor**
 
-        :param datetime.datetime birthdate: 
-        :param int id:  
-        :param float min_radius: in meters 
-        :param int order: 
-        :param int path: 
-        :param int rank: 
-        :param int store_data: 
+        :param datetime.datetime birthdate:
+        :param int id:
+        :param float min_radius: in meters
+        :param int order:
+        :param int path:
+        :param int rank:
+        :param int store_data:
+        :param float latency: number of days of latency before stopping the gu.
 
         :attributes:
             * :attr:`length`: total length of the growth unit in meters
             * :attr:`radius`:  radius of at the base of the growth unit (see plants module)
-            * those inherited by :class:`~openalea.plantik.biotik.component.ComponentInterface`: 
-              :attr:`age`, :attr:`demand`, :attr:`birthdate`, ...
+            * those inherited by :class:`~openalea.plantik.biotik.component.ComponentInterface`:
+                * :attr:`age`
+                * :attr:`demand`
+                * :attr:`birthdate`
+                * :attr:`state` set to 'growing' by default in the constructor. Then, the :meth:`update`
+                  may set to it to 'stopped' if no changement has been done for a duration> :attr:`latency`.
             * :attr:`internode_counter`  count number of internodes in this growth unit
-            * :attr:`growthunit_counter` count number of growth units in this growth unit
-            * :attr:`variables` is a :class:`CollectionVariables` instance containing the :attr:`age`, 
+            * :attr:`variables` is a :class:`CollectionVariables` instance containing the :attr:`age`,
               :attr:`radius` and :attr:`length` at each time step
+
+
+
+        .. note:: when creating a gu, :attr:`state` is by definition set to 'growing'.
         """
         self.context = Context(rank=rank, order=order, path=path)
-        ComponentInterface.__init__(self, label='GrowthUnit', birthdate=birthdate, id=id)
+        # when creating a gu, it is by definition in a growing state.
+        ComponentInterface.__init__(self, label='GrowthUnit', birthdate=birthdate, id=id, state='growing')
 
         self.store_data = store_data
         self._length = 0.
         self._radius = min_radius
+        self._latency = latency
+        self._internode_counter = 0.
 
         self.variables = CollectionVariables()
         self.variables.add(SingleVariable(name='age', unit='days', values=[self.age.days]))
         self.variables.add(SingleVariable(name='length', unit='meters', values=[self.length]))
         self.variables.add(SingleVariable(name='radius', unit='meters', values=[self.radius]))
 
+        self.__step_without_growing = 0
 
-        self.internode_counter = 0. # count number of internodes in this gu
+    def _getInternode(self):
+        return self._internode_counter
+    def _setInternode(self, value):
+        prev = self._internode_counter
+        self._internode_counter = value
+        if self._internode_counter == prev:
+            self.__step_without_growing += 1
+        else:
+            self.__step_without_growing = 0
+    internode_counter = property(_getInternode, _setInternode, None, "getter/setter to the gu radius")
 
     def _getRadius(self):
         return self._radius
     def _setRadius(self, value):
         if value< self._radius:
-            print "radius decreased in gu update!!"
+            raise ValueError("radius decreased in gu update!!")
         self._radius = value
     radius = property(_getRadius, _setRadius, None, "getter/setter to the gu radius")
 
@@ -113,6 +134,12 @@ class GrowthUnit(ComponentInterface):
         self._length = value
     length = property(_getLength, _setLength, None, "getter/setter to the gu length")
 
+    def _getLatency(self):
+        return self._latency
+    latency = property(_getLatency, None, None, "getter to the gu latency")
+
+
+
     def update(self, dt):
         """Update the gu characteristics at each time step
 
@@ -120,13 +147,15 @@ class GrowthUnit(ComponentInterface):
         if **store_data** is True, it also append the age,
         length and radius to :attr:`variables`
 
-        :param float,int,datetime.timedelta dt: in days
+        :param float dt: in days
         """
         super(GrowthUnit, self).update(dt)
         if self.store_data is True:
             self.variables.age.append(self.age.days)
             self.variables.length.append(self.length)
             self.variables.radius.append(self.radius)
+        if self.__step_without_growing * dt > self.latency:
+            self.state = 'stopped'
 
 
     def demandCalculation(self, **kargs):
@@ -137,7 +166,7 @@ class GrowthUnit(ComponentInterface):
         """no resource for a gu (i.e., zero)"""
         pass
 
-    def plot(self, variables=['length', 'radius'], show=True, **args):
+    def plot(self, variables=['radius', 'length'], show=True, grid=True, **args):
         """plot some results
 
         :param list variables: plot results related to the variables provided
@@ -145,7 +174,7 @@ class GrowthUnit(ComponentInterface):
         :param  args: any parameters that pylab.plot would accept.
 
         .. plot::
-            :width: 50%
+            :width: 30%
             :include-source:
 
             from openalea.plantik.biotik.growthunit import *
@@ -154,33 +183,10 @@ class GrowthUnit(ComponentInterface):
                 b.radius = (v*0.001)**0.5
                 b.length = v*0.01
                 b.update(1)
-            b.plot(variables=['radius'])
+            b.plot('radius')
 
         """
-        self.variables.valid_names(variables)
-        import pylab
-        #_variables = checkVariables(self.variables, variables)
-
-        count = 1
-        if 'length' in variables:
-            pylab.figure(count)
-            self.variables.length.plot(show=show, **args)
-            count += 1
-
-        if 'radius' in variables:
-            pylab.figure(count)
-            self.variables.radius.plot(show=show, **args)
-            count += 1
-
-        pylab.figure(count)
-        length = self.variables.length
-        radius = self.variables.radius
-        pylab.plot(length.values, radius.values, 'o-')
-        pylab.xlabel('Length (%s)' % length.unit)
-        pylab.ylabel('Radius (%s)' % radius.unit)
-        pylab.grid(True)
-        if show == True:
-            pylab.show()
+        self.variables.plot(variables=variables, show=show, grid=grid, **args)
 
 
     def __str__(self):
@@ -189,7 +195,7 @@ class GrowthUnit(ComponentInterface):
         res += self.context.__str__()
         res += title('other attributes')
         res +='\n'
-        for name in self.variables.names:
+        for name in self.variables.keys():
             res += "%s = %s" % (name, getattr(self, name))
             res +='\n'
 
