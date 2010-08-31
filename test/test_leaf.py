@@ -5,20 +5,13 @@ from openalea.plantik.biotik.leaf import Leaf
 class testLeaf():
 
     def __init__(self):
-        self.leaf = Leaf()
+        self.leaf = Leaf(store_data=True, resource_per_day=1)
 
 
     def test_update(self):
         self.leaf.update(1)
+        self.leaf.update(self.leaf.maturation)
 
-    def test_attributes(self):
-        assert self.leaf.mass_per_area == 220
-        self.leaf.area
-        self.leaf.mass
-
-    def _test_plot(self):
-        self.leaf.update(10)
-        self.leaf.plot('length', show=False)
 
     def _test_wrong_attribute(self):
         try:
@@ -27,17 +20,28 @@ class testLeaf():
             assert True
 
     def test_resource(self):
-        self.leaf.resource_calculation()
-        assert self.leaf.resource == 0
+        assert self.leaf.efficiency_method == 'unity'
+        self.leaf.resourceCalculation()
+        assert self.leaf.resource >= 0
 
+        self.leaf.efficiency_method = 'logistic'
+        self.leaf.resourceCalculation()
+        assert self.leaf.resource >= 0
+
+        self.leaf.efficiency_method = 'dummy'
+        try:
+            self.leaf.resourceCalculation()
+            assert False
+        except:
+            assert True
 
     def test_demand(self):
-        self.leaf.demand_calculation()
+        self.leaf.demandCalculation()
         assert self.leaf.demand == 0
 
-    def test_maintenance(self):
-        self.leaf._compute_maintenance()
-        assert self.leaf.maintenance == 0
+    def test_livingcost(self):
+        self.leaf._compute_livingcost()
+        assert self.leaf.livingcost == 0
 
     def test_str(self):
         print self.leaf
@@ -45,3 +49,15 @@ class testLeaf():
     def test_plot(self):
         self.leaf.plot(show=False)
 
+
+    def test_read_only_attributes(self):
+        try:
+            self.leaf.radius = 1
+            assert False
+        except:
+            assert True
+
+    def test_attributes_getters(self):
+        self.leaf.area
+        self.leaf.mass
+        self.leaf.radius
