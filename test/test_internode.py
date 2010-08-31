@@ -5,12 +5,16 @@ from openalea.plantik.biotik.internode import Internode
 class testInternode():
 
     def __init__(self):
-        self.internode = Internode()
+        self.internode = Internode(store_data=True)
 
     def test_attributes(self):
-        assert self.internode._plastochron == 3.
         self.internode.mass
+        self.internode.radius
+        self.internode.length
 
+        # test setters
+        self.internode.radius = self.internode.radius
+        self.internode.target_radius = self.internode.target_radius
     def test_plot(self):
         self.internode.update(10)
         self.internode.plot('length', show=False)
@@ -22,18 +26,18 @@ class testInternode():
             assert True
 
     def test_resource(self):
-        self.internode.resource_calculation()
+        self.internode.resourceCalculation()
         assert self.internode.resource == 0
     
 
     def test_demand(self):
-        self.internode.demand_calculation()
+        self.internode.demandCalculation()
         assert self.internode.demand == 0
 
     def test_maintenance(self):
-        self.internode._compute_maintenance(1)
-        assert self.internode.maintenance == 0
+        self.internode._compute_livingcost(1)
+        assert self.internode.livingcost == 0
 
     def test_str(self):
         print self.internode
-    
+
