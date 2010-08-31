@@ -14,23 +14,23 @@ def test_component_interface():
     assert c.age.days == 0
     assert c.label == 'Apex'
     assert type(c.birthdate) == datetime.datetime
-    assert c.id == None
+    assert c.id == 0
     assert c.state == None
     assert c.demand == 0
     assert c.allocated == 0
     assert c.resource == 0
-    assert c.maintenance == 0
+    assert c.livingcost == 0
     assert c.initial_demand == 0
     #check setter of state
     c.state = 'test'
     assert c.state == 'test'
     c.demand = 1
     c.resource = 1
-    c.maintenance = 1
+    c.livingcost = 1
     c.allocated = 1
     assert c.demand == 1
     assert c.resource == 1
-    assert c.maintenance == 1
+    assert c.livingcost == 1
     assert c.allocated == 1
     # test
 
@@ -45,17 +45,17 @@ def test_component_interface():
             assert True
 
     try:
-        c.demand_calculation()
+        c.demandCalculation()
     except:
         assert True
 
     try:
-        c.resource_calculation()
+        c.resourceCalculation()
     except:
         assert True
 
     try:
-        c.maintenance_calculation()
+        c.livingcostCalculation()
     except:
         assert True
 

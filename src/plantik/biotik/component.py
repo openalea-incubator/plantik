@@ -6,8 +6,9 @@
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
-    
+    :Revision: $Id$
+    :Usage: >>> from openalea.plantik.biotik.component import *
+
 .. testsetup:: *
 
     from openalea.plantik.biotik.component import ComponentInterface
@@ -15,28 +16,38 @@
 from openalea.plantik.tools import misc
 import datetime
 
+
 class ComponentInterface(object):
     """Common interface to all biological objects
 
-    A component interface should be used to create more specialised objects
-    such as internode, leaf, etc. 
-    
-    Attributes should be read-only as much as possible. The :meth:`update` being
-    in charge of accessing the attributes. (see the constructor docstring for
-    further details). 
-    
-   
+    This abstract class provides facilities for user to build up more
+    complex biological objects such as internodes and leaves.
+
+    A few attributes are provided, which should be read-only as much as possible. The
+    attributes available are explained in the constructor documentation here below. For
+    instance, we have the :attr:`age` and the :attr:`label` attributes.
+
+
+    There are several methods. The :meth:`update` method should be used to update
+    relevant attributes each time the age changes, which explain why the age cannot
+    be changed by hand (read-only). This is to prevent user to update the age and
+    forget to update related attributes.
+
     Each component must have 3 methods that allows to compute at each time
-    step:  
-    
-        * its demand with :meth:`demand_calculation`
-        * its resource with :meth:`resource_calculation`
-        * its maintenance cost with :meth:`maintenance_calculation`
-        
-    Finally, a :meth:`update` method must be implemented. The purpose being
-    to update parameter when time step increases. It should be used to update
-    the parameters of the components such as its age.
-        
+    step:
+
+        * its :attr:`demand` with :meth:`demandCalculation`
+        * its :attr:`resource` with :meth:`resourceCalculation`
+        * its :attr:`livingcost` cost with :meth:`livingcostCalculation`
+
+    By default these 3 methods are not implemented, and any biological components
+    must therefore implement them. You can supply the `pass`  keyword if you do
+    not known what those functions are. By default, resource, demand and living cost
+    will be zero in such case::
+
+        def demandCalculation(self):
+            pass
+
     >>> root = ComponentInterface('Root', datetime.datetime.now(), state='growing')
     >>> root.age
     datetime.timedelta(0)
@@ -48,137 +59,156 @@ class ComponentInterface(object):
     >>> root.label
     'Root'
     """
-    def __init__(self, label=None, birthdate=None, id=None, state=None):
+    def __init__(self, label=None, birthdate=None, id=0, state=None):
         """**Constructor**
-           
-        :param label: a string that labels the component
-        :param birthdate: a datetime.datetime object
-        :param age: biological age of the object in days (0 by default) 
-        :param id:  id that may be used to identify an object
-        :param state: status of the object to be defined by the user.
-        
+
+        :param str label: a string that labels the component (default is None). Must be set.
+        :param datetime.datetime birthdate: a datetime.datetime object (default is None)
+        :param int id:  id that may be used to identify an object (default is None)
+        :param str state: status of the object to be defined by the user (default is None).
+
+        :type age: `datetime.timedelta`
+
         :attributes:
-        
-            * :attr:`label`
-            * :attr:`birthdate`
-            * :attr:`age`
-            * :attr:`id`
-            * :attr:`state`
-            * :attr:`demand`
-            * :attr:`resource`
-            * :attr:`maintenance` 
-        
-        
+            * From parameters:
+                * :attr:`label`, read-only
+                * :attr:`birthdate`, read-only
+                * :attr:`id`, read-only
+                * :attr:`state`, read-write
+            * Others
+                * :attr:`age`, read-only. Default value is 0.
+                * :attr:`allocated`, read-write attribute to store the allocated resource 
+                  at each step (set to 0).
+                * :attr:`demand`, read-write attribute to store the demand resource at
+                  each time step.
+                * :attr:`resource`, read-write attribure to specify the amount of resource 
+                  created at each time step.
+                * :attr:`livingcost`, read_write attribute to specify the cost to maintain 
+                  the component alive.
+
+        .. note:: id is hardly used. In the lpy pruning model for instance.
+
+        .. note:: :attr:`allocated`, :attr:`demand`, :attr:`resource`, :attr:`livingcost`
+            are useful for reactive models.
+
         """
-        # set dummy birthdate
-        if birthdate==None:
-            birthdate = datetime.datetime.now()
-            
-        assert type(birthdate) == datetime.datetime, \
-            "birthdate must be a valid datetime instance"
-        assert type(label) == str, \
-            "label must be a string"
-        
-        self._age = datetime.timedelta(0)
+        # set birthdate
+        if birthdate != None:
+            assert type(birthdate) == datetime.datetime, \
+                "birthdate must be a valid datetime instance"
+        if label is not None:
+            assert type(label) == str, "label must be a string"
+
+        #from parameters
         self._birthdate = birthdate
         self._id = id
         self._label = label
         self._state = state
+        #others
+        self._age = datetime.timedelta(0)
+
+        # used for more complex applications like transport models.
+        # these may be should be move elsewhere, outside of this class. 
+        # this is indeed already quite sophisticated.
         self._initial_demand = 0.
         self._demand = 0.
         self._resource = 0.
         self._allocated = 0.
-        #: maintenace attribute
-        self._maintenance = 0.
-      
-      
-    def demand_calculation(self):
-        """this function should compute the demand 
+        self._livingcost = 0.
+
+
+    def demandCalculation(self):
+        """this function should compute the demand
         of this component at a given time, according
         to its age or other physiological information.
         """
         raise NotImplementedError()
 
-    def resource_calculation(self):
-        """this function should compute the resource 
+    def resourceCalculation(self):
+        """this function should compute the resource
         provided by this component at a given time, according
         to its age or other physiological information.
         """
         raise NotImplementedError()
-    
-    def maintenance_calculation(self):
-        """this function should compute the amount of 
-        resource requied to keep this component alive
+
+    def livingcostCalculation(self):
+        """this function should compute the amount of
+        resource required to keep this component alive
         """
         pass
         #raise NotImplementedError()
-        
+
 
     #read only attributes
     def _get_age(self):
         return self._age
     age = property(fget=_get_age,
-                   doc="the age of the component in days")
-    
+                   doc="""getter to the :attr:`age` of the component (datetime.timedelta type). 
+                        There is no setter to prevent bad manipulation. Use the 
+                        :meth:`update` method instead""")
+
     def _get_label(self):
         return self._label
-    label = property(fget=_get_label, 
-                     doc="a meaningful label (e.g., Root, Apex")
+    label = property(fget=_get_label,
+                     doc="getter to :attr:`label` of the component, Should be a meaningful label (e.g., Root, Apex)")
 
     def _get_id(self):
         return self._id
-    id = property(fget=_get_id, 
-                  doc="a unique id to be defined by the user")
+    id = property(fget=_get_id,
+                  doc="getter to :attr:`id`, a unique id to be defined by the user")
 
     def _get_birthdate(self):
         return self._birthdate
-    birthdate = property(fget=_get_birthdate, 
-                         doc="birthdate of the component in datetime format")
-    
+    birthdate = property(fget=_get_birthdate,
+                         doc="getter to :attr:`birthdate` of the component in datetime format")
+
     def _set_state(self, state):
         self._state = state
     def _get_state(self):
         return self._state
     state = property(fget=_get_state, fset=_set_state,
-                    doc="state of the component to be specified by the user") 
-     
+                    doc="getter/setter of :attr:`state` of the component to be specified by the user")
+
     def _get_demand(self):
         return self._demand
     def _set_demand(self, demand=0):
         self._demand = demand
-    demand = property(fget=_get_demand, fset=_set_demand, 
-                      doc="demand of the component")
-    
+    demand = property(fget=_get_demand, fset=_set_demand,
+                      doc="getter/settter for the :attr:`demand` of the component")
+
     def _get_allocated(self):
         return self._allocated
     def _set_allocated(self, allocated=0):
         self._allocated = allocated
-    allocated = property(_get_allocated, _set_allocated, None, 
-                      doc="demand of the component")                
-                    
-    
+    allocated = property(_get_allocated, _set_allocated, None,
+                      doc="getter/setter for the :attr:`allocated` of the component")
+
+
     def _get_initial_demand(self):
         return self._initial_demand
     def _set_initial_demand(self, d):
         self._initial_demand = d
-    initial_demand = property(fget=_get_initial_demand,fset=_set_initial_demand, 
-                      doc="initial demand of the component")                
-    
+    initial_demand = property(fget=_get_initial_demand,fset=_set_initial_demand,
+                      doc="initial demand of the component")
+
     def _get_resource(self):
         return self._resource
     def _set_resource(self, resource):
         self._resource = resource
     resource = property(fget=_get_resource, fset=_set_resource,
-                      doc="resource of the component")                
-    
-    def _get_maintenance(self):
-        return self._maintenance
-    def _set_maintenance(self, maintenance):
-        self._maintenance = maintenance
-    maintenance = property(fget=_get_maintenance, fset=_set_maintenance,
-                      doc="maintenance cost of the component")                
+                      doc="getter/setter of the :attr:`resource` of the component")
+
+    def _get_livingcost(self):
+        return self._livingcost
+    def _set_livingcost(self, livingcost):
+        self._livingcost = livingcost
+    livingcost = property(fget=_get_livingcost, fset=_set_livingcost,
+                      doc="getter/setter for the :attr:`livingcost` cost of the component")
 
     def component_summary(self):
+        """
+        .. todo:: to be completed if required.
+        """
         out = misc.title('Basic attributes')
         out += 'Label =    %s\n' % self._label
         out += 'Age =     %s\n' % self._age
@@ -190,13 +220,15 @@ class ComponentInterface(object):
 
     def update(self, dt):
         """update commands
-        
-        Update the age of the component by dt
-        
-        :param dt: in days
+
+        Update the :attr:`age` of the component by `dt`
+
+        :param float,int,datetime.timedelta dt: dt to add to the :attr:`age` (in days)
         """
         if type(dt) == datetime.timedelta:
             self._age += dt
         else:
             self._age += datetime.timedelta(dt)
-        
+
+
+
