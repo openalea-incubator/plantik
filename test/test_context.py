@@ -7,3 +7,8 @@ def test_context():
     assert c.rank == 1
     assert c.order == 1
     print(c)
+
+    c.path = 2
+    c.order = 2
+    c.rank  = 2
+
