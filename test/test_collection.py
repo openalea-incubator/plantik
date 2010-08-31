@@ -47,7 +47,7 @@ class test_collection():
 
 
     def test_names(self):
-        assert self.col.names == ['age','temperature']
+        assert sorted(self.col.keys()) == ['age','temperature']
 
     def test_append(self):
         self.col.append([1,2])
@@ -83,4 +83,12 @@ class test_collection():
         assert self.col2.age.values == [], "col2.age.values must be empty found %s" % self.col2.age.values
        
     def test_valid_names(self) :
-        self.col.valid_names(['age', 'temperature'])
+        self.col._valid_names(['age', 'temperature'])
+        self.col._valid_names('age')
+        self.col._valid_names(['age'])
+        names = self.col._valid_names()
+        assert sorted(names) == ['age','temperature']
+
+    def test_hist(self):
+        self.col.append([1,2])
+        self.col.hist(show=False)
