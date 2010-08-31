@@ -1,71 +1,182 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+"""Apex module
+
+.. module apex
+    :synopsis: Apices functionalities and classes
+
+
+.. topic:: Summary
+
+    Apices functionalities and classes
+
+    :Code: mature
+    :Documentation: mature
+    :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
+    :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
+    :Usage:
+        >>> from openalea.plantik.biotik.apex import *
+
+.. testsetup::
+
+    from openalea.plantik.biotik.apex import *
+
+"""
+
+from openalea.plantik.biotik.collection import * 
 from openalea.plantik.biotik.context import Context
 from openalea.plantik.biotik.component import ComponentInterface
 from openalea.plantik.biotik.growth import GrowthFunction
-from openalea.plantik.tools.plot import CheckVariables
 from math import pi, exp
 from openalea.plantik.tools.misc import title
 
 
 
 class Apex(ComponentInterface):
+    """class dedicated to apex component.
+
+    An apex is a biological objects that can produce other biological objects.
+    As a biological component, it inherits attributes and methods
+    from :class:`~openalea.plantik.biotik.component.ComponentInterface`.
+
+
+    """
     def __init__(self, birthdate=None, order=0, path=1, rank=1,
                  bud_break_year=None,
-                 demand=2, metamer_cost=2, maintenance=0,
-                 distance_meter=0., id=None, plastochron=3.,
-                 vigor=0.1):
+                 demand=2, metamer_cost=2, livingcost=0.,
+                 height=0., id=0, plastochron=3.,
+                 vigor=0.1, store_data=False):
+        """**Constructor**
 
+        :param datetime.datetime birthdate: (default is None)
+        :param int order:   (default is 0)
+        :param int path:    (default is 1)
+        :param int rank:    (default is 1)
+        :param bool bud_break_year: ??
+        :param float demand:  (default is 2)
+        :param float metamer_cost:    (default is 2)
+        :param float livingcost: (default is 0)
+        :param float height:
+        :param int id: (default is 0)
+        :param plastochron: (default is 3)
+        :param vigor: (default is 0.1)
+        :param store_data: used by :meth:`save_data_product` to save data at each 
+           time step (default is False).
 
+        :attributes:
+            * :attr:`current_plastochron`:
+            * :attr:`radius`:  (default is 0)
+            * :attr:`growth_threshold`:  (default is 0.2)
+            * :attr:`growth_potential`:  (default is 1)
+            * :attr:`interruption`: time step during which an apex is not growing (default is 0.)
+            * :attr:`growing` (default is False)
+            * :attr:`father_radius`  (default is 0.)
+            * :attr:`internodes_created`  keep track of the number of internodes created by this
+                apex (default is 0.).
 
+        .. todo:: finalise the doc (attributes) and cleaning up the code`
+        """
         self.context = Context(rank=rank, order=order, path=path)
-        ComponentInterface.__init__(self, label='Apex',
-                                    birthdate=birthdate, id=id)
+        ComponentInterface.__init__(self, label='Apex', birthdate=birthdate, id=id)
 
-        self.plastochron = plastochron
-        self.current_plastochron = 0.
-        self.metamer_cost = metamer_cost
-        self.demand = demand
-        self.bud_break_year = bud_break_year
 
-        self.maintenance = maintenance # cost to maintain the apex alive
-        self.distance_meter = distance_meter
+        # read-only attribute
+        self.plastochron = plastochron      # time interval at which production of new biological object is possible
+        self.metamer_cost = metamer_cost    # cost to produce new object (internode + new bud)
+        self.demand = demand                # demand of the metamer in biomass unit/per time  unit
+        self.bud_break_year = bud_break_year # todo
+
+
+        self.store_data = store_data
+
+        self._height = height
+        self._vigor = vigor                  # used by the demandCalculation function
+
+        self.variables = CollectionVariables()
+        self.variables.add(SingleVariable(name='age', unit='days', values=[self.age.days]))
+        self.variables.add(SingleVariable(name='height', unit='meters', values=[self.height]))
+        self.variables.add(SingleVariable(name='demand', unit='biomass unit', values=[self.demand]))
+        self.variables.add(SingleVariable(name='allocated', unit='biomass unit', values=[self.allocated]))
+        self.variables.add(SingleVariable(name='vigor', unit='biomass unit', values=[self.vigor]))
+
+
+        #read-write attributes
+        self.livingcost = livingcost      # cost to maintain the apex alive
+        self.initial_demand = demand
+
+        # additional attributes
+        self.current_plastochron = 0.   # keep track of the plastochron
         self.radius = 0.00 # for the pipe model
         self.growth_threshold = 0.2
         self.growth_potential = 1
-        self.vigor = vigor
-       
-        self.initial_demand = demand 
-        #self.demand_initial_v = [self._demand_initial]
-        self.initial_demand_v = [self._initial_demand]
-        self.internode_length_v = []
 
-        self.variables = ['age', 'radius', 'vigor', 'demand', 'allocated', 'height']
-        for var in self.variables:
-            self.__setattr__(var+'_v', [])
-        self.save_data_product()
-        self.interruption = 0.
-        self.growing = False
+
+
         self.father_radius = 0.
-        self.internodes = 0.
-        #self.radius = 0.
+        self.interruption = 0.              # time step during which an apex is not growing
+        self.growing = False
+        self.internodes_created = 0.        # count number of internodes created by this apex
 
-    def save_data_product(self):
-        self.age_v.append(self.age.days)
-        self.height_v.append(self.distance_meter)
-        self.allocated_v.append(self.allocated)
-        self.demand_v.append(self.demand)
-        self.initial_demand_v.append(self.initial_demand)
-        #self.time_v.append(time)
-        self.vigor_v.append(self.vigor)
-        self.radius_v.append(self.radius)
 
+    def _getHeight(self):
+        return self._height
+    def _setHeight(self, height):
+        self._height = height
+    height = property(_getHeight, _setHeight, None, doc="getter/setter to distance between apex and root")
+
+    def _getVigor(self):
+        return self._vigor
+    def _setVigor(self, height):
+        self._vigor = height
+    vigor = property(_getVigor, _setVigor, None, doc="getter/setter to distance between apex and root")
 
     def update(self, dt):
+        """A re-definition of ComponentsInterface.update method
+
+        Calls :meth:`~openalea.plantik.biotik.component.ComponentsInterface.update`, then 
+        it updates the :attr:`current_plastochron`, 
+        """
         super(Apex, self).update(dt)
         self.current_plastochron += dt
         self.interruption += dt
-        self.save_data_product()
 
-    def demand_calculation(self,  **kargs):
+        if self.store_data is True:
+            self.variables.age.append(self.age.days)
+            self.variables.height.append(self.height)
+            self.variables.demand.append(self.demand)
+            self.variables.allocated.append(self.allocated)
+            self.variables.vigor.append(self.vigor)
+
+    def demandCalculation(self,  **kargs):
+        """Compute the demand of an apex according to its context
+
+
+        :param float alpha:
+        :param float beta:
+        :param float gamma:
+        :param float delta:
+        :param str context: order_height
+
+        The order is denoted :math:`o`.
+        The path is :math`p`.
+        The age is :math`a`.
+
+        .. math::
+
+            \\frac{1}{(1+o)^\\alpha}
+
+        .. math::
+
+            \\frac{1}{(1+p)^\\beta}
+
+        .. math::
+
+            (\\frac{1}{1+exp^{+(0.03*(age-90.))}})^\gamma
+
+        .. math::
+
+            (vigor)^\delta
+        """
 
         alpha = kargs.get("alpha", 1.)
         beta = kargs.get("beta", 1.)
@@ -97,47 +208,31 @@ class Apex(ComponentInterface):
             # nothing to be done in the simple model
             return self.initial_demand
 
-    def _compute_maintenance(self):
+    def computeLivingcost(self):
         pass
 
-    def resource_calculation(self):
+    def resourceCalculation(self):
+        assert self.resource == 0, "how come apex have some resource ? "
         return self.resource
 
-    def _plot_demand(self,clf=True ):
-        import pylab
-        import numpy
-        if clf:
-            pylab.clf()
-        pylab.plot(self.age_v, self.allocated_v, '-o', label='allocated')
-        pylab.hold(True)
-        pylab.plot(self.age_v, self.demand_v, 'x', label='demand')
-        pylab.plot(self.age_v, self.initial_demand_v, 'x',
-                   label='initial demand $d_0$')
-        pylab.grid(True)
-        pylab.legend(loc='best')
-        pylab.xlabel('time since birthdate')
-        pylab.show()
 
     def plot(self, variables=None, tag='', clf=True, show=True, symbol='-o'):
         import pylab
-        _variables = CheckVariables(self.variables, variables)
 
-        if clf is True:
-            pylab.figure()
-            pylab.clf()
-        for variable in _variables:
-            if variable not in ['age', 'radius']:
-                pylab.plot(self.age_v, getattr(self, '%s_v' % variable), symbol, label=variable)
-                pylab.xlabel('time since birthdate')
-                pylab.ylabel('%s of this %s' % (variable, self.label))
-                pylab.grid(True)
-        pylab.plot([min(self.age_v), max(self.age_v)], 
-                   [self.growth_threshold, self.growth_threshold], 
-                   label='growth threshold')
-        if show==True:
-            pylab.show()
+        height = self.variables.height.plot(show=False)[0]
+        demand = self.variables.demand.plot(show=False)[0]
+        allocated = self.variables.allocated.plot(show=False)[0]
+        vigor = self.variables.vigor.plot(show=False)[0]
+
+        pylab.plot(height.get_xdata(), height.get_ydata(), marker='o', color='b')
+        pylab.hold(True)
+        pylab.plot(demand.get_xdata(), demand.get_ydata(), marker='o', color='g')
+        pylab.plot(allocated.get_xdata(), allocated.get_ydata(), marker='o', color='r')
+        pylab.plot(vigor.get_xdata(), vigor.get_ydata(), marker='o', color='c')
+        pylab.plot([min(self.variables.age.values), max(self.variables.age.values)], 
+            [self.growth_threshold, self.growth_threshold], color='m')
         pylab.legend()
-        pylab.savefig('test_%s_%s_%s.png' % (self.label, tag, variable))
+        pylab.show()
 
 
 
@@ -146,8 +241,17 @@ class Apex(ComponentInterface):
         res += self.context.__str__()
         res += title('other attributes')
         res += ' - demand=%s' % self._demand
-        res += ' - resource=%s' % self._resource
         res += ' - allocated=%s' % self._allocated
-        res += ' - maintenance=%s' % self._maintenance
+        res += ' - livingcost=%s' % self._livingcost
 
         return res
+
+
+    def plot_resource(self, variables=['demand', 'allocated'], show=True, grid=True, **args):
+        """plot some results
+
+        :param list variables: plot results related to the variables provided
+        :param bool show: create but do not show the plot (useful for test, saving)
+        :param  args: any parameters that pylab.plot would accept.
+        """
+        self.variables.plot(variables=variables, show=show, grid=grid, **args)

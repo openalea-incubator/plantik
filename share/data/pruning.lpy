@@ -17,6 +17,7 @@ import openalea.plantik.biotik.apex; reload(openalea.plantik.biotik.apex)
 import openalea.plantik.biotik.plant; reload(openalea.plantik.biotik.plant)
 import openalea.plantik.tools.lstring; reload(openalea.plantik.tools.lstring)
 import openalea.plantik.biotik.branch; reload(openalea.plantik.biotik.branch)
+import openalea.plantik.biotik.growthunit; reload(openalea.plantik.biotik.growthunit)
 import openalea.plantik.plants.allocation; reload(openalea.plantik.plants.allocation)
 
 from openalea.plantik.plants.allocation import Allocation
@@ -157,7 +158,7 @@ def EndEach(lstring, scene):
     try:
       if lstring[-1][0].id==2:
         data.apex['allocated'].append(lstring[-1][0].allocated)
-        data.apex['height'].append(lstring[-1][0].distance_meter)
+        data.apex['height'].append(lstring[-1][0].height)
         data.apex['age'].append(lstring[-1][0].age.days)
         data.apex['demand'].append(lstring[-1][0].demand)
     except:
@@ -355,13 +356,14 @@ A(a):
     length=allocation/Internode.cost_per_metamer/pi/Internode.radius_min/Internode.radius_min
     #print a.allocated, allocation, length, Internode.cost_per_metamer
     # update distance in meters from the root
-    a.distance_meter+=min(0.03, length)
+    a.height+=min(0.03, length)
     internode_args = {
       'rank': a.context.rank-1,
       'order': a.context.order,
       'length_max': length,
       'cambial_fraction':options.internode.cambial_fraction,
-      'birthdate':simulation.calendar.date
+      'birthdate':simulation.calendar.date,
+      'store_data':options.internode.store_data
       }
         
     apex_args = {
@@ -370,18 +372,20 @@ A(a):
       'rank': a.context.rank,
       'path': a.context.path,
       'demand': demand,
-      'distance_meter': length,
+      'height': length,
       'plastochron':a.plastochron,
       'birthdate':simulation.calendar.date,
       'store_data':options.apex.store_data
       }
     leaf_args = {
-      'resource':options.leaf.resource,
+      'resource_per_day':options.leaf.resource,
       'maturation':options.leaf.maturation,
       'growth_function':options.leaf.growth_function,
       'efficiency_method':options.leaf.efficiency_method,
       'internode_vigor': length/Internode.length_max,
-      'birthdate':simulation.calendar.date
+      'birthdate':simulation.calendar.date,
+      'store_data':options.leaf.store_data,
+      'nu':0.5
       }
       
     branch_args = {
