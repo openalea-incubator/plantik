@@ -1,4 +1,4 @@
-from openalea.plantik.tools.config import ReadConfigFile, save_config_file
+from openalea.plantik.tools.config import ReadConfigFile, saveConfigFile
 import os
 from nose import with_setup
 
@@ -36,7 +36,7 @@ def create_config_file():
 
 def test_save_config():
     this = create_config_file()
-    save_config_file('test.ini', this)
+    saveConfigFile('test.ini', this)
     res1 = ReadConfigFile('test.ini')
     res2 = ReadConfigFile('example.cfg')
 

@@ -70,3 +70,10 @@ class Branch(GrowthUnit):
         self.growthunit_counter = 0.# count number of growth units in this branch
 
 
+    def __str__(self):
+        from openalea.plantik.tools.misc import title
+        res = super(Branch, self).__str__()
+        res += title('other attributes')
+        res += 'growthunit counter %s' % self.growthunit_counter
+        return res
+

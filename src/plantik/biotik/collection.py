@@ -148,14 +148,16 @@ class SingleVariable(object):
         pylab.clf()
         if x == None:
             x = pylab.linspace(0, len(self.values)-1, len(self.values)) * self.dt
-            pylab.plot(x, self.values, **args)
+            line2d = pylab.plot(x, self.values, label=self.name, **args)
         else:
-            pylab.plot(x, self.values, **args)
+            line2d = pylab.plot(x, self.values, label=self.name, **args)
 
         pylab.xlabel('Time (in days)')
         pylab.ylabel('%s (%s)' % (self.name.replace('_','\_').title(), self.unit))
         if show: pylab.show()
         pylab.grid(grid)
+
+        return line2d
 
     def hist(self, grid=True, show=True, id=1, **args):
         """Plot histogram of the variable values

@@ -174,14 +174,14 @@ class ComponentInterface(object):
     def _set_demand(self, demand=0):
         self._demand = demand
     demand = property(fget=_get_demand, fset=_set_demand,
-                      doc="getter/settter for the :attr:`demand` of the component")
+                      doc="getter/settter for the :attr:`demand` of the component at a given step.")
 
     def _get_allocated(self):
         return self._allocated
     def _set_allocated(self, allocated=0):
         self._allocated = allocated
     allocated = property(_get_allocated, _set_allocated, None,
-                      doc="getter/setter for the :attr:`allocated` of the component")
+                      doc="getter/setter to the :attr:`allocated` resource of the component at a given step.")
 
 
     def _get_initial_demand(self):
@@ -205,18 +205,17 @@ class ComponentInterface(object):
     livingcost = property(fget=_get_livingcost, fset=_set_livingcost,
                       doc="getter/setter for the :attr:`livingcost` cost of the component")
 
-    def component_summary(self):
-        """
-        .. todo:: to be completed if required.
-        """
+    def __str__(self):
         out = misc.title('Basic attributes')
-        out += 'Label =    %s\n' % self._label
-        out += 'Age =     %s\n' % self._age
-        out += 'Id =      %s\n' % self._id
+        out += 'Label       = %s\n' % self._label
+        out += 'Age         = %s\n' % self._age
+        out += 'Id          = %s\n' % self._id
+        out += 'demand      = %s\n' % self._demand
+        out += 'resource    = %s\n' % self._resource
+        out += 'allocated   = %s\n' % self._allocated
+        out += 'livingcost  = %s\n' % self._livingcost
         return out
 
-    def __str__(self):
-        return self.component_summary()
 
     def update(self, dt):
         """update commands

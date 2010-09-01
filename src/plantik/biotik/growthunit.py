@@ -191,9 +191,10 @@ class GrowthUnit(ComponentInterface):
 
     def __str__(self):
         from openalea.plantik.tools.misc import title
-        res = self.component_summary()
+        res = super(GrowthUnit, self).__str__()
         res += self.context.__str__()
-        res += title('other attributes')
+        res += self.variables.__str__()
+        res += title('other growth unit attributes')
         res +='\n'
         for name in self.variables.keys():
             res += "%s = %s" % (name, getattr(self, name))

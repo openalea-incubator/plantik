@@ -71,7 +71,7 @@ class Internode(ComponentInterface):
     def __init__(self, length_max=length_max,
                  cambial_fraction=0., birthdate=None,
                  rank=1, order=0, path=1, id=None, maturation=10,
-                 growth_rate=0.5, growth_function='linear', store_data=False):
+                 growth_rate=0.5, growth_function='logistic', store_data=False):
         """**Constructor**
 
         :param float length_max:
@@ -126,13 +126,10 @@ class Internode(ComponentInterface):
         self._mu = cambial_fraction  # % of cambial layer
 
     def __str__(self):
-        res = self.component_summary()
+        res = super(Internode, self).__str__()
         res += self.context.__str__()
+        res += self.variables.__str__()
         res += title('other attributes')
-        res += ' - demand=%s' % self.demand
-        res += ' - resource=%s' % self.resource
-        res += ' - allocated=%s' % self.allocated
-        res += ' - livingcost=%s' % self.livingcost
         return res
 
     def resourceCalculation(self):

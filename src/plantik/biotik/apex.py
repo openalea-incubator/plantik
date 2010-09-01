@@ -42,9 +42,8 @@ class Apex(ComponentInterface):
 
     """
     def __init__(self, birthdate=None, order=0, path=1, rank=1,
-                 bud_break_year=None,
                  demand=2, metamer_cost=2, livingcost=0.,
-                 height=0., id=0, plastochron=3.,
+                 height=0., id=0, plastochron=3., growth_threshold = 0.2,
                  vigor=0.1, store_data=False):
         """**Constructor**
 
@@ -52,7 +51,6 @@ class Apex(ComponentInterface):
         :param int order:   (default is 0)
         :param int path:    (default is 1)
         :param int rank:    (default is 1)
-        :param bool bud_break_year: ??
         :param float demand:  (default is 2)
         :param float metamer_cost:    (default is 2)
         :param float livingcost: (default is 0)
@@ -62,11 +60,12 @@ class Apex(ComponentInterface):
         :param vigor: (default is 0.1)
         :param store_data: used by :meth:`save_data_product` to save data at each 
            time step (default is False).
+        :param float growth_threshold: a value between  0 and 1 allowing a 
+            production once allocation is larger than this value
 
         :attributes:
             * :attr:`current_plastochron`:
             * :attr:`radius`:  (default is 0)
-            * :attr:`growth_threshold`:  (default is 0.2)
             * :attr:`growth_potential`:  (default is 1)
             * :attr:`interruption`: time step during which an apex is not growing (default is 0.)
             * :attr:`growing` (default is False)
@@ -84,13 +83,13 @@ class Apex(ComponentInterface):
         self.plastochron = plastochron      # time interval at which production of new biological object is possible
         self.metamer_cost = metamer_cost    # cost to produce new object (internode + new bud)
         self.demand = demand                # demand of the metamer in biomass unit/per time  unit
-        self.bud_break_year = bud_break_year # todo
 
 
         self.store_data = store_data
 
         self._height = height
-        self._vigor = vigor                  # used by the demandCalculation function
+        self._vigor = vigor
+        self._growth_threshold = growth_threshold
 
         self.variables = CollectionVariables()
         self.variables.add(SingleVariable(name='age', unit='days', values=[self.age.days]))
@@ -107,8 +106,7 @@ class Apex(ComponentInterface):
         # additional attributes
         self.current_plastochron = 0.   # keep track of the plastochron
         self.radius = 0.00 # for the pipe model
-        self.growth_threshold = 0.2
-        self.growth_potential = 1
+        self.growth_potential = 1   #?
 
 
 
@@ -124,10 +122,14 @@ class Apex(ComponentInterface):
         self._height = height
     height = property(_getHeight, _setHeight, None, doc="getter/setter to distance between apex and root")
 
+    def _getGrowthThreshold(self):
+        return self._growth_threshold
+    growth_threshold = property(_getGrowthThreshold, None, None, doc="getter to growth threshold")
+
     def _getVigor(self):
         return self._vigor
-    def _setVigor(self, height):
-        self._vigor = height
+    def _setVigor(self, vigor):
+        self._vigor = vigor
     vigor = property(_getVigor, _setVigor, None, doc="getter/setter to distance between apex and root")
 
     def update(self, dt):
@@ -216,7 +218,7 @@ class Apex(ComponentInterface):
         return self.resource
 
 
-    def plot(self, variables=None, tag='', clf=True, show=True, symbol='-o'):
+    def plot(self, clf=True, show=True, symbol='-o'):
         import pylab
 
         height = self.variables.height.plot(show=False)[0]
@@ -224,30 +226,27 @@ class Apex(ComponentInterface):
         allocated = self.variables.allocated.plot(show=False)[0]
         vigor = self.variables.vigor.plot(show=False)[0]
 
-        pylab.plot(height.get_xdata(), height.get_ydata(), marker='o', color='b')
+        pylab.plot(height.get_xdata(), height.get_ydata(), marker='o', color='b', label='Height')
         pylab.hold(True)
-        pylab.plot(demand.get_xdata(), demand.get_ydata(), marker='o', color='g')
-        pylab.plot(allocated.get_xdata(), allocated.get_ydata(), marker='o', color='r')
-        pylab.plot(vigor.get_xdata(), vigor.get_ydata(), marker='o', color='c')
+        pylab.plot(demand.get_xdata(), demand.get_ydata(), marker='o', color='g', label='Demand')
+        pylab.plot(allocated.get_xdata(), allocated.get_ydata(), marker='o', color='r', label='allocated')
+        pylab.plot(vigor.get_xdata(), vigor.get_ydata(), marker='o', color='c', label='vigor')
         pylab.plot([min(self.variables.age.values), max(self.variables.age.values)], 
-            [self.growth_threshold, self.growth_threshold], color='m')
+            [self.growth_threshold, self.growth_threshold], color='m', label='threshold')
         pylab.legend()
-        pylab.show()
-
+        if show is True: pylab.show()
 
 
     def __str__(self):
-        res = self.component_summary()
+        res = super(Apex, self).__str__()
         res += self.context.__str__()
-        res += title('other attributes')
-        res += ' - demand=%s' % self._demand
-        res += ' - allocated=%s' % self._allocated
-        res += ' - livingcost=%s' % self._livingcost
+        res += self.variables.__str__()
+        res += title('other apex attributes. to be done')
 
         return res
 
 
-    def plot_resource(self, variables=['demand', 'allocated'], show=True, grid=True, **args):
+    def plot_variables(self, variables=['demand', 'allocated'], show=True, grid=True, **args):
         """plot some results
 
         :param list variables: plot results related to the variables provided

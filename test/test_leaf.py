@@ -40,7 +40,7 @@ class testLeaf():
         assert self.leaf.demand == 0
 
     def test_livingcost(self):
-        self.leaf._compute_livingcost()
+        self.leaf.computeLivingcost()
         assert self.leaf.livingcost == 0
 
     def test_str(self):

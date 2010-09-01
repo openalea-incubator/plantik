@@ -60,6 +60,18 @@ class GrowthFunction(object):
         self._growth_function = growth_function
         self._maturation = float(maturation)
 
+    def __str__(self):
+        from openalea.plantik.tools.misc import title
+        res = title("Growth Function parameter")
+        res += "parameter A                 = %s\n"  % self.A
+        res += "parameter K                 = %s\n"  % self.K
+        res += "parameter maturation        = %s\n"  % self.maturation
+        res += "parameter nu                = %s\n"  % self.nu
+        res += "parameter growth function   = %s\n"  % self.growth_function
+        res += "parameter growth rate       = %s\n"  % self.growth_rate
+        return res
+
+
     def _getMaturation(self):
         return self._maturation
     maturation = property(_getMaturation, None, None, "getter for maturation")

@@ -14,11 +14,6 @@
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id: leaf.py 9013 2010-05-27 09:06:13Z cokelaer $
     :Usage: >>> from openalea.plantik.biotik.leaf import *
-    :References:
-
-        1. Colin Smith, Costes Evelyne, On the Simulation of Apple Trees
-           Using Statistical and Biomechanical Principles, INRIA
-           technical report, 2007
 
 .. testsetup::
 
@@ -54,7 +49,7 @@ class Leaf(ComponentInterface):
     :Example:
 
     >>> from openalea.plantik.biotik.leaf import *
-    >>> i = Leaf(store_data=True)
+    >>> i = Leaf(store_data=True, resource_per_day=1)
     >>> i.age.days
     0
     >>> i.variables.age.values
@@ -77,26 +72,39 @@ class Leaf(ComponentInterface):
                  growth_function='sigmoid', efficiency_method='unity', store_data=False, nu=1):
         """**Constructor**
 
+        Compulsary parameter is `resource_per_day`, that should be stricly positive.
+
         :param datetime.datetime birthdate:
         :param int rank:
         :param int order:
         :param int path:
         :param int id:
-        :param float maturation: time before which leaf reach maturation (max length and area)
-        :param int store_data:
-        :param internode_vigor: a leaf area is proportional to the internode length. 
-            intenode_vigor of 1 means the internode had full length. 
-        :param livingcost:
-        :param resource_per_day: the optimal resource produce by a leaf per day
-        :param growth_function:
+        :param float maturation: time before which leaf reach maturation
+        :param float internode_vigor: a leaf area is proportional to the internode length. 
+            intenode_vigor of 1 means the internode had full length and therefore leaf has
+            a potential for maximum area as well.
+        :param float livingcost:
+        :param float resource_per_day: the optimal resource produce by a standard leaf per day
+        :param float growth_rate:
+        :param str growth_function: in ['linear', 'sigmoid', 'logistic']
         :param nu: shape of the logistic function
-        :param efficiency_method:
+        :param efficiency_method: 'unity' or 'sigmoid'
+        :param int store_data:
+        :param nu: shape of the logistic function
 
         :attributes:
 
-            * those inherited by :class:`~openalea.plantik.biotik.component.ComponentInterface`: 
-              :attr:`age`, :attr:`demand`, :attr:`birthdate`, ...
+            * :attr:`area`: the leaf area, a :meth:`~openalea.plantik.biotik.growth.GrowthFunction` 
+              instance (read-only). The input parameters **growth_function**, **growth_rate**, **nu**,
+              and **maturation** are used by this function.
+            * Those inherited by :class:`~openalea.plantik.biotik.component.ComponentInterface`: 
+              :attr:`~openalea.plantik.biotik.component.ComponentInterface.age`,
+              :attr:`~openalea.plantik.biotik.component.ComponentInterface.allocated`,
+              :attr:`~openalea.plantik.biotik.component.ComponentInterface.demand`,
+              :attr:`~openalea.plantik.biotik.component.ComponentInterface.livingcost`,
+              :attr:`~openalea.plantik.biotik.component.ComponentInterface.resource`.
             * :attr:`variables` is a :class:`CollectionVariables` instance containing the :attr:`age`, 
+              :attr:`demand`, :attr:`resource`, :attr:`area`.
         """
         assert internode_vigor>=0 and internode_vigor<=1, "internode vifor must be in [0,1]"
         assert resource_per_day >0, 'resource_per_day must be positive otherwise noting will happen...'
@@ -108,16 +116,11 @@ class Leaf(ComponentInterface):
         # leaf min must correspond to internode length min so that leafmaxarea>-leafminarea
         self._radius = Leaf.petiole_radius          # for geometry purpose only
 
-        self._resource = resource_per_day
-        self.current_resource = 0.
-        self.growth_rate = 0.5
-        self.radius_min = 0.0005
-        # leaf min must correspond to internode length min so that leafmaxarea>-leafminarea
-
+        # set the area growth function
         self.area_max = Leaf.area_max * internode_vigor
         self._area = GrowthFunction(Leaf.area_min, self.area_max,
-                                   maturation=maturation,  growth_rate=self.growth_rate,
-                                   growth_function=growth_function)
+                                   maturation=maturation,  growth_rate=growth_rate,
+                                   growth_function=growth_function, nu=nu)
         self._r0 = resource_per_day
 
 
@@ -136,9 +139,10 @@ class Leaf(ComponentInterface):
         self.variables.add(SingleVariable(name='area', unit='meters square', values=[self.area]))
 
         # parameters
-        self.livingcost = livingcost              # cost to maintain leaf alive
+        self.livingcost = livingcost              # cost to maintain leaf alive !!
         self.efficiency_method = efficiency_method
 
+        # other attributes.
         # radius used by the interpretation of the lsystem. todo: move it elsewhere outsitde this class.
         self.father_radius = 0
 
@@ -156,11 +160,11 @@ class Leaf(ComponentInterface):
 
         This update function performs the following tasks:
 
-        # increment age by dt
-        # store age into variables.age
-        # store resource into variables.resource
-        # store demand into variables.demand
-        # store area into variables.area if age< maturation
+        #. increment age by dt
+        #. store age into variables.age
+        #. store resource into variables.resource
+        #. store demand into variables.demand
+        #. store area into variables.area if age< maturation
 
         :param float dt: 
 
@@ -177,13 +181,27 @@ class Leaf(ComponentInterface):
 
 
     def __str__(self):
-        res = self.component_summary()
+        res = super(Leaf, self).__str__()
         res += self.context.__str__()
-        res += title('other attributes')
-        res += ' - demand=%s' % self._demand
-        res += ' - resource=%s' % self.resource
-        res += ' - allocated=%s' % self._allocated
-        res += ' - livingcost=%s' % self._livingcost
+        res += self.variables.__str__()
+        res += title('other leaf attributes')
+
+        res += 'area                = %s\n' % self.area
+        res += 'initial_demand      = %s\n' % self._initial_demand
+        res += 'leaf_efficiency     = %s\n' % self.leaf_efficiency
+        res += 'r0                  = %s\n' % self.r0
+        res += 'radius              = %s\n' % self.radius
+        res += 'area_max            = %s\n' % self.area_max
+        res += 'efficiency_method   = %s\n' % self.efficiency_method
+        res += 'father_radius       = %s\n' % self.father_radius
+        res += 'internode_vigor     = %s\n' % self.internode_vigor
+        res += 'lg                  = %s\n' % self.lg
+        res += 'm1                  = %s\n' % self.m1
+        res += 'm2                  = %s\n' % self.m2
+        res += 'maturation          = %s\n' % self.maturation
+        res += 'store_data          = %s\n' % self.store_data
+
+        res += self._area.__str__()
 
         return res
 
@@ -204,23 +222,30 @@ class Leaf(ComponentInterface):
         self.demand =0.
         return self.demand
 
-    def resourceCalculation(self):
+    def resourceCalculation(self, test=None):
         r"""leaf resource is computed as follows:
 
         .. math::
 
             r(t) = r_0 * \mathcal{A} / \mathcal{A_{\textrm{max}}} * \mathcal{E}(t)
 
-        where :math:`\mathcal{E}(t)` is the leaf efficiency. See :meth:`~openalea.plantik.biotik.leaf.leaf_efficiency`
+        where :math:`\mathcal{E}(t)` is the leaf efficiency, :math:`\mathcal{A}`, the leaf
+        area and :math:`\mathcal{A}_{\textrm{max}}` the area of a standard leaf and :math:`r_0`
+        the resource of a standard leaf per day.. See :meth:`~openalea.plantik.biotik.leaf.leaf_efficiency`
         method. Since :math:`r_0` is a unit of resource per day, :math:`r(t)` is in unit of biomass per day
 
 
         """
-        #self.resource = self.r0 * self.area / self.area_max
+
         #self.resource *= self.leaf_efficiency(self.age.days, self.efficiency_method, self.m1, self.m2)
-        #return self.resource
-        self.current_resource = self.resource * self.area / self.area_max * self.leaf_efficiency()
-        return self.current_resource 
+    
+        # buggy version where all leaves whatever size produce at max r0
+        if test=='buggy':
+           self.resource = self.r0 * self.area / self.area_max
+        else:
+            self.resource = self.r0 * self.area / Leaf.area_max
+        self.resource *= self.leaf_efficiency()
+        return self.resource 
 
 
     def leaf_efficiency(self):
@@ -242,15 +267,14 @@ class Leaf(ComponentInterface):
         """
         if self.efficiency_method == 'unity':
             return 1.
-        elif self.efficiency_method == 'sigmoid':
-            from math import exp
+        elif self.efficiency_method in ['logistic', 'sigmoid']:
+            from pylab import exp
             return 1./(1+exp(0.5*(self.m1-self.age.days))) / (1.+exp(0.3*(self.age.days-self.m2)))
-    
-    def __setstate__(self, data):
-        self.__dict__.update(data)
+        else:
+            raise ValueError('efficiency_method must be either unity or sigmoid (config.ini file)')
 
-    def _compute_livingcost(self):
-        pass
+    def computeLivingcost(self):
+        return self.livingcost
 
     def _getMass(self):
         return Leaf.mass_per_area * self.area
@@ -263,8 +287,8 @@ class Leaf(ComponentInterface):
 
     def _getArea(self):
         return self._area.growthValue(self.age.days)
-    area = property(_getArea, None, None, doc="leaf area")
-    
+    area = property(_getArea, None, None, doc="getter to the leaf area.")
+
     def _getR0(self):
         return self._r0
     r0 = property(_getR0, None, None, doc="optimal resource per day")

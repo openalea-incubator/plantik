@@ -40,7 +40,7 @@ from heapq import heappush, heappop
 import datetime
 
 
-STARTYEAR = 2000
+
 counter = 0
 RATIO = 50.
 
@@ -52,12 +52,6 @@ colors = Colors()
 from openalea.plantik import get_shared_data
 options = ReadConfigFile(get_shared_data('pruning.ini'))
 
-setattr(options.general, 'filename_prefix', 'pruning_%s_%s_%.1f_%.1f' % \
-    (options.general.tag,
-    options.context.model,  
-    options.context.order_coeff, 
-    options.context.height_coeff))
-
 #set bg color
 bg = tuple(options.viewer.background.split(','))
 Viewer.frameGL.setBgColor(int(bg[0]), int(bg[1]), int(bg[2]))
@@ -66,11 +60,11 @@ Viewer.grids.setYZPlane(options.viewer.yzgrid)
 Viewer.grids.setXZPlane(options.viewer.xzgrid)
 
 # create calendar instance      
-simulation = Simulation(dt=options.general.time_step)
-STOPYEAR = STARTYEAR + options.general.max_number_years
+simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
 
 RESERVE = 0.
-plant = Plant(options=options, revision=__revision__, pipe_fraction=0.5)
+plant = Plant(options.general.time_step, options=options, revision=__revision__,  pipe_fraction=0.5)
+
 
 module P(Plant): scale=1
 module B(Branch): scale=2
@@ -108,33 +102,29 @@ def EndEach(lstring, scene):
   global allocation
   dt = simulation.calendar.dt.days
   
-  if simulation.calendar.year >= STOPYEAR or len(lstring)>=options.general.max_elements:
-    if len(lstring)>=8000:
-        print 'Naximum number of elements reached %s' % (options.general.max_elements)
-    else:
-        print 'Stop year reached'
+  if len(lstring)>=options.general.max_elements:
+    print 'Naximum number of elements reached %s' % (options.general.max_elements)
     Stop()
     End(lstring)
-  else:
-    if options.general.verbose:
-        print simulation.date, getIterationNb()
+
+  if options.general.verbose:
+    print simulation.date, getIterationNb()
     
 
   global RESERVE
   simulation.advance()  
-
+  plant.simulation = simulation
   if 1==0:
     pass
   else:
     # Save Lstring
-    plant.lstring = lstring
     # Save MTG
     scales = {'A':4,'I':4,'L':4, 'P':1, 'B':2, 'U':3}
     parameters = {'A': ['Apex'], 'I': ['Internode'],  'L': ['Leaf'],'P':['Plant'], 'U':['GrowthUnit'], 'B':['Branch']}
     mtg1 = axialtree2mtg(lstring, scales, scene, parameters)
     plant.mtg = mtg1
     # update
-    plant.update(simulation.time_elapsed.days)
+    plant.update(simulation.time_elapsed.days, lstring)
     # compute allocated resources according to the individual demand (proportional model)
     allocatedResources = 0
     cumulatedAllocatedResources = 0
@@ -268,13 +258,14 @@ def End(lstring):
       return 
     plant.mtg.properties()['geometry']={}
     import pickle
-    pickle.dump(plant, open(options.general.filename_prefix+'_data.dat','w'))
+    pickle.dump(plant, open("pruning_" + options.general.tag +'_data.dat','w'))
+    import openalea.plantik.tools.post_analysis
+
     if options.misc.post_analysis is True:
         from openalea.plantgl.all import Viewer
         Viewer.frameGL.saveImage(options.general.filename_prefix+'_viewer_final_time.png')
-        import post_analysis
-        reload(post_analysis)
-        post_analysis.single_plots(plant, options.general.filename_prefix)
+        import openalea.plantik.tools.post_analysis as post_analysis
+        post_analysis.single_plots(plant, "pruning_" + options.general.tag )
         print 'Figures saved'
     
     #from openalea.mtg.io import write_mtg
@@ -284,7 +275,7 @@ def End(lstring):
     #outputmtg.close()
 
 
-Axiom: P(plant) B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(bud_break_year=STARTYEAR, demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data))
+Axiom: P(plant) B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data, growth_threshold=options.apex.growth_threshold))
 
 derivation length: int(options.general.max_step)
 
@@ -335,7 +326,7 @@ A(a):
   
   
   # since we have reached plastochron, we check if there is enough allocated R
-  if a.allocated<=options.misc.growth_threshold:
+  if a.allocated<=a.growth_threshold:
     if options.misc.reset_resource:
         plant.R += a.allocated
         a.allocated = 0.
@@ -375,7 +366,8 @@ A(a):
       'height': length,
       'plastochron':a.plastochron,
       'birthdate':simulation.calendar.date,
-      'store_data':options.apex.store_data
+      'store_data':options.apex.store_data,
+      'growth_threshold':options.apex.growth_threshold
       }
     leaf_args = {
       'resource_per_day':options.leaf.resource,
@@ -488,7 +480,7 @@ A(a):
       colorcode=5
     else:
       raise ValueError('colorcode in config.ini must be in normal, order')
-    produce SetColor(colorcode) +(90)  f(options.geometry.radius_scale*a.father_radius*RATIO+a.radius) +(-90) Sphere(max(0.4, a.allocated)/300. * RATIO) 
+    produce SetColor(colorcode) +(90)  f(options.geometry.radius_scale*a.father_radius*RATIO+a.radius) +(-90)    Sphere(max(0.4, a.allocated)/300. * RATIO) 
     #Label('   ' +str(
 I(i):
   

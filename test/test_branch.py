@@ -32,3 +32,6 @@ class testBranch():
 
     def test_plot(self):
         self.branch.plot(show=False)
+
+    def test_str(self):
+        print self.branch
