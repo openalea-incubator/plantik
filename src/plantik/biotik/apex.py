@@ -41,16 +41,13 @@ class Apex(ComponentInterface):
 
 
     """
-    def __init__(self, birthdate=None, order=0, path=1, rank=1,
+    def __init__(self, birthdate=None, 
                  demand=2, metamer_cost=2, livingcost=0.,
                  height=0., id=0, plastochron=3., growth_threshold = 0.2,
                  vigor=0.1, store_data=False):
         """**Constructor**
 
         :param datetime.datetime birthdate: (default is None)
-        :param int order:   (default is 0)
-        :param int path:    (default is 1)
-        :param int rank:    (default is 1)
         :param float demand:  (default is 2)
         :param float metamer_cost:    (default is 2)
         :param float livingcost: (default is 0)
@@ -75,7 +72,7 @@ class Apex(ComponentInterface):
 
         .. todo:: finalise the doc (attributes) and cleaning up the code`
         """
-        self.context = Context(rank=rank, order=order, path=path)
+        self.context = Context()
         ComponentInterface.__init__(self, label='Apex', birthdate=birthdate, id=id)
 
 
@@ -160,7 +157,7 @@ class Apex(ComponentInterface):
         :param str context: order_height
 
         The order is denoted :math:`o`.
-        The path is :math`p`.
+        The height is :math`p`.
         The age is :math`a`.
 
         .. math::
@@ -180,30 +177,31 @@ class Apex(ComponentInterface):
             (vigor)^\delta
         """
 
-        alpha = kargs.get("alpha", 1.)
-        beta = kargs.get("beta", 1.)
-        gamma = kargs.get("gamma", 0)
-        delta = kargs.get("delta", 0)
+        order_coeff = kargs.get("order_coeff", 0)
+        height_coeff = kargs.get("heigth_coeff", 0)
+        rank_coeff = kargs.get("rank_coeff", 0)
+        age_coeff = kargs.get("age_coeff", 0)
+        vigor_coeff = kargs.get("vigor_coeff", 0)
         context = kargs.get("context", "order_height")
 
         #todo refactoering switch model to context
         model = context
         assert model in ["none", "order_height_age",  "order_height"], 'check your config.ini file (model field)'
         order = self.context.order
-        path = self.context.path
+        height = self.context.height
         rank = self.context.rank
 
         if model=="order_height":
-            self.demand = self.initial_demand / float(order+1)**alpha / float(path)**beta
+            self.demand = self.initial_demand / float(order+1)**order_coeff / float(height)**height_coeff
             return self.demand
         elif model=="order_height_age":
-            self.weight_order = 1./float(order+1)**alpha
-            self.weight_height = 1./float(path)**beta
-            self.demand = self.initial_demand * self.weight_order * self.weight_height
-
-            self.weight_gamma = 1./(1+exp(+(0.03*(self.age.days-90.))))
-            self.demand *= self.weight_gamma**gamma
-            self.demand *= self.vigor**delta
+            self.weight_order = 1./float(order+1)**order_coeff
+            self.weight_height = 1./float(height+1)**height_coeff
+            self.weight_rank = 1./float(rank+1)**rank_coeff
+            self.weight_age = 1./(1+exp(+(0.03*(self.age.days-90.))))
+            self.demand = self.initial_demand * self.weight_order * self.weight_height * self.weight_rank
+            self.demand *= self.weight_age**age_coeff
+            self.demand *= self.vigor**vigor_coeff
 
             return self.demand
         elif model=='none':

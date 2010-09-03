@@ -67,7 +67,7 @@ class Leaf(ComponentInterface):
     area_max = 30 * 0.01 * 0.01
     mass_per_area = 200             # g/m^2
     def __init__(self, birthdate=None, 
-                 rank=1, order=0, path=1, id=None, maturation=21, 
+                 id=None, maturation=21, 
                  internode_vigor=1., livingcost=0., resource_per_day=0., growth_rate=0.5,
                  growth_function='sigmoid', efficiency_method='unity', store_data=False, nu=1):
         """**Constructor**
@@ -75,9 +75,6 @@ class Leaf(ComponentInterface):
         Compulsary parameter is `resource_per_day`, that should be stricly positive.
 
         :param datetime.datetime birthdate:
-        :param int rank:
-        :param int order:
-        :param int path:
         :param int id:
         :param float maturation: time before which leaf reach maturation
         :param float internode_vigor: a leaf area is proportional to the internode length. 
@@ -110,7 +107,7 @@ class Leaf(ComponentInterface):
         assert resource_per_day >0, 'resource_per_day must be positive otherwise noting will happen...'
 
 
-        self.context = Context(rank=rank, order=order, path=path)
+        self.context = Context()
         ComponentInterface.__init__(self, label='Leaf', birthdate=birthdate, id=id, state='growing')
 
         # leaf min must correspond to internode length min so that leafmaxarea>-leafminarea
@@ -187,7 +184,6 @@ class Leaf(ComponentInterface):
         res += title('other leaf attributes')
 
         res += 'area                = %s\n' % self.area
-        res += 'initial_demand      = %s\n' % self._initial_demand
         res += 'leaf_efficiency     = %s\n' % self.leaf_efficiency
         res += 'r0                  = %s\n' % self.r0
         res += 'radius              = %s\n' % self.radius

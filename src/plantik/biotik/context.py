@@ -20,38 +20,38 @@ class Context(object):
 
     see the contuctor for more information
 
-    >>> c = Context(rank=1, order=1, path=1)
+    >>> c = Context()
     >>> assert c.order == 1
     >>> c.order = 3
     >>> assert c.order == 3
 
     """
-    def __init__(self, rank=None, order=None, path=None):
+    def __init__(self, rank=None, order=None, height=None):
         """**Context constructor**
 
         :attributes:
             * :attr:`order`
-            * :attr:`path`
+            * :attr:`height`
             * :attr:`rank`
         """
         self._rank = rank
-        self._path = path
+        self._height = height
         self._order = order
 
     def __str__(self):
         res =  '\nContext\n'
         res += '=======\n'
         res += ' - rank=%s\n' % self.rank
-        res += ' - path=%s\n' % self.path
+        res += ' - height=%s\n' % self.height
         res += ' - order=%s\n' % self.order
         return res
 
 
-    def _set_path(self, path):
-        self._path = path
-    def _get_path(self):
-        return self._path
-    path = property(_get_path, _set_path, None, "getter/setter for path")
+    def _set_height(self, height):
+        self._height = height
+    def _get_height(self):
+        return self._height
+    height = property(_get_height, _set_height, None, "getter/setter for height")
 
     def _set_order(self, order):
         self._order = order

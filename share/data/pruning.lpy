@@ -63,8 +63,11 @@ Viewer.grids.setXZPlane(options.viewer.xzgrid)
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
 
 RESERVE = 0.
-plant = Plant(options.general.time_step, options=options, revision=__revision__,  pipe_fraction=0.5)
+plant = Plant(options.general.time_step, options=options, revision=__revision__,  
+                pipe_fraction=1, tag=options.general.tag)
 
+scales = {'A':4,'I':4,'L':4, 'P':1, 'B':2, 'U':3}
+parameters = {'A': ['Apex'], 'I': ['Internode'],  'L': ['Leaf'],'P':['Plant'], 'U':['GrowthUnit'], 'B':['Branch']}
 
 module P(Plant): scale=1
 module B(Branch): scale=2
@@ -119,12 +122,13 @@ def EndEach(lstring, scene):
   else:
     # Save Lstring
     # Save MTG
-    scales = {'A':4,'I':4,'L':4, 'P':1, 'B':2, 'U':3}
-    parameters = {'A': ['Apex'], 'I': ['Internode'],  'L': ['Leaf'],'P':['Plant'], 'U':['GrowthUnit'], 'B':['Branch']}
-    mtg1 = axialtree2mtg(lstring, scales, scene, parameters)
-    plant.mtg = mtg1
+    
     # update
+    mtg = axialtree2mtg(lstring, scales, scene, parameters)
+    plant.mtgtools.mtg = mtg
     plant.update(simulation.time_elapsed.days, lstring)
+    #plant.mtg = 
+
     # compute allocated resources according to the individual demand (proportional model)
     allocatedResources = 0
     cumulatedAllocatedResources = 0
@@ -176,22 +180,29 @@ def EndEach(lstring, scene):
     elif options.pipe.model=='vinci':
        diameters = {}
        temp = {'I':'Internode', 'L':'Leaf'}
-       for vid in traversal.pre_order(mtg1, 4):
-           diameters[vid] = pow(sum([max(mtg1.property(temp[mtg1.class_name(c)])[c].radius,0.001)**coeff  for c in mtg1.children(vid) if mtg1.class_name(c) in ['I', 'L']]), 1./coeff)
+       for vid in traversal.pre_order(plant.mtg, 4):
+           diameters[vid] = pow(sum([max(plant.mtg.property(temp[plant.mtg.class_name(c)])[c].radius,0.001)**coeff  for c in plant.mtg.children(vid) if plant.mtg.class_name(c) in ['I', 'L']]), 1./coeff)
            #print 'vid', vid, diameters[vid], [mtg1.property(temp[mtg1.class_name(c)])[c] for c in mtg1.children(vid) if mtg1.class_name(c) in ['I', 'L']]
        for vid, s in diameters.iteritems():
-           if mtg1.class_name(vid) in ['I']:
-             mtg1.property('Internode')[vid].radius = diameters[vid]
+           if plant.mtg.class_name(vid) in ['I']:
+             plant.mtg.property('Internode')[vid].radius = diameters[vid]
 
     elif options.pipe.model=='vinci2':
 
         radius = {}
         temp = {'I':'Internode', 'L':'Leaf'}
-        for vid in traversal.pre_order(mtg1, 4):
-           radius[vid] = pow(sum([max(mtg1.property(temp[mtg1.class_name(c)])[c].radius,0.001)**coeff  for c in mtg1.children(vid) if mtg1.class_name(c) in ['I', 'L']]), 1./coeff)
+        for vid in traversal.pre_order(plant.mtg, 4):
+           radius[vid] = pow(
+                           sum(
+                             [ (plant.mtg.property(temp[plant.mtg.class_name(c)])[c].radius)**coeff  
+                               for c in plant.mtg.children(vid) if plant.mtg.class_name(c) in ['I', 'L'] 
+                               ]
+                               ),
+                               1./coeff)
         for vid, s in radius.iteritems():
-           if mtg1.class_name(vid) in ['I']:
-              mtg1.property('Internode')[vid].target_radius = radius[vid]
+           if plant.mtg.class_name(vid) in ['I']:
+              # max to prevent radius to shrink
+              plant.mtg.property('Internode')[vid].target_radius = max(radius[vid], plant.mtg.property('Internode')[vid].target_radius)
     elif options.pipe.model==None:
       pass
     else:
@@ -214,28 +225,26 @@ def EndEach(lstring, scene):
       Viewer.camera.lookAt(pos,pos+h)      
       Viewer.redrawPolicy = True
 
-    #required for the homomorphism to nicely represent the first
+    # required for the homomorphism to nicely represent the first
     # element as a cylinder with same base and top radius until a
     # better solution is found
     lstring[0][0].radius = lstring[1][0].radius
     
     # anothor homomorphism trick: the leaf must be shifted to fit the
     # internode radius on which they are put. Similarly for the apices
-    #account for 25% of the CPU time 
+    #account for 5% of CPU
     if options.geometry.realistic_petiole == True:
-        from openalea.mtg.aml import Activate, Father
-        g = Activate(lstring[0][0].mtg)
-        idleaves = [id for id in g.vertices() if g.class_name(id) in ['L']]
-        for idleaf in idleaves:
-            id = Father(idleaf)
-            g.property('Leaf')[idleaf].father_radius = g.property('Internode')[id].radius
-        idleaves = [id for id in g.vertices() if g.class_name(id) == 'A']
-        for idleaf in idleaves:
-            try:
-              id = Father(idleaf)
-              g.property('Apex')[idleaf].father_radius = g.property('Internode')[id].radius
-            except:
-              pass
+        from openalea.mtg.algo import father
+        for ids in plant.mtgtools.ids['L']:
+            id = father(plant.mtg, ids)
+            plant.mtg.property('Leaf')[ids].father_radius = plant.mtg.property('Internode')[id].radius
+        for ids in plant.mtgtools.ids['A']:
+            #try:
+            id = father(plant.mtg, ids)
+            if id:
+              plant.mtg.property('Apex')[ids].father_radius = plant.mtg.property('Internode')[id].radius
+            #except:
+            #  pass
 
     useGroup(1)
 
@@ -339,8 +348,6 @@ A(a):
     vigor = max(min(1,a.allocated),0.1)
     
     
-    a.context.rank += 1 # since we create an internode, the rank is incremented
-    a.context.path += 1 
     # Create new internode, leaf and apex 
     # First, the internode with the internode's length 
     # the default internode's radius is use to compute the length of this internode given the growth_threshold/allocated resources.
@@ -349,8 +356,6 @@ A(a):
     # update distance in meters from the root
     a.height+=min(0.03, length)
     internode_args = {
-      'rank': a.context.rank-1,
-      'order': a.context.order,
       'length_max': length,
       'cambial_fraction':options.internode.cambial_fraction,
       'birthdate':simulation.calendar.date,
@@ -359,9 +364,6 @@ A(a):
         
     apex_args = {
       'vigor':vigor,
-      'order': a.context.order+1,
-      'rank': a.context.rank,
-      'path': a.context.path,
       'demand': demand,
       'height': length,
       'plastochron':a.plastochron,
@@ -381,24 +383,16 @@ A(a):
       }
       
     branch_args = {
-      'birthdate':simulation.calendar.date,
-      'order': a.context.order+1,
-      'rank': a.context.rank-1,
-      'path': a.context.path,
-      
+      'birthdate':simulation.calendar.date,      
     }
     growth_unit_args = {
-      'birthdate':simulation.calendar.date,
-      'order': a.context.order+1,
-      'rank': a.context.rank,
-      'path': a.context.path,
-      
+      'birthdate':simulation.calendar.date,      
     }
     
     # print a.interruption , a.growing
     # the first apex is has interruption = 0 at the beginnin of the simulation
     # since the axiom is BUA, we do not want to redo BU in that particular case
-    if a.internodes_created == 0 and a.context.order!=0 and a.context.path!=1:
+    if a.internodes_created == 0 and a.context.order!=0 and a.context.height!=1:
         nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
     else:
         # else, if the apex has already grown but has stopped, we only want to add a U

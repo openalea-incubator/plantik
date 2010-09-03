@@ -67,10 +67,10 @@ class Internode(ComponentInterface):
     length_max = 0.03
     length_min = 0.001
     cost_per_metamer = 1./(radius_min*radius_min*length_max * pi)
-
+    volume_standard = 3.14159 * radius_min**2 * length_max
     def __init__(self, length_max=length_max,
                  cambial_fraction=0., birthdate=None,
-                 rank=1, order=0, path=1, id=None, maturation=10,
+                 id=None, maturation=10,
                  growth_rate=0.5, growth_function='logistic', store_data=False):
         """**Constructor**
 
@@ -79,9 +79,6 @@ class Internode(ComponentInterface):
         :param datetime.datetime birthdate:
         :param int id:
         :param float min_radius: in meters
-        :param int order:
-        :param int path:
-        :param int rank:
         :param int store_data:
         :param float maturation:
         :param float growth_rate:
@@ -99,7 +96,7 @@ class Internode(ComponentInterface):
         .. todo:: cambial fraction, possible other parameters: wood density
 
         """
-        self.context = Context(rank=rank, order=order, path=path)
+        self.context = Context()
         ComponentInterface.__init__(self, label='Internode', birthdate=birthdate, id=id)
 
         self._radius = Internode.radius_min
@@ -178,6 +175,8 @@ class Internode(ComponentInterface):
     def _getRadius(self):
         return self._radius
     def _setRadius(self, radius):
+        if radius< self._radius:
+            raise ValueError("radius decreased in internode !!")
         self._radius = radius
     radius = property(_getRadius, _setRadius, None, doc="radius")
     
@@ -186,8 +185,7 @@ class Internode(ComponentInterface):
     def _setTargetRadius(self, target_radius):
         self._target_radius = target_radius
     target_radius = property(_getTargetRadius, _setTargetRadius, None, doc="""
-        .. todo:: target radius explaination
-        """)
+        .. todo:: target radius explaination""")
 
 
     def _getLength(self):

@@ -62,16 +62,12 @@ class GrowthUnit(ComponentInterface):
 
 
     """
-    def __init__(self, birthdate=None, id=None, min_radius=0.001, latency=6,
-                 order=0, path=1, rank=1, store_data=True):
+    def __init__(self, birthdate=None, id=None, min_radius=0.001, latency=6,  store_data=True):
         """**Constructor**
 
         :param datetime.datetime birthdate:
         :param int id:
         :param float min_radius: in meters
-        :param int order:
-        :param int path:
-        :param int rank:
         :param int store_data:
         :param float latency: number of days of latency before stopping the gu.
 
@@ -92,7 +88,7 @@ class GrowthUnit(ComponentInterface):
 
         .. note:: when creating a gu, :attr:`state` is by definition set to 'growing'.
         """
-        self.context = Context(rank=rank, order=order, path=path)
+        self.context = Context()
         # when creating a gu, it is by definition in a growing state.
         ComponentInterface.__init__(self, label='GrowthUnit', birthdate=birthdate, id=id, state='growing')
 
