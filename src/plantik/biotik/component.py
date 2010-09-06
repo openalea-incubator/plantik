@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""
+"""components module
+
+.. module:: components
+    :synopsis: Abstract base class to all biological components
+
 .. topic:: component.py status
+
+    Abstract base class to all biological components
 
     :Code: mature
     :Documentation: mature

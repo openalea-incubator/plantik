@@ -44,7 +44,12 @@ class test_collection():
         self.col = CollectionVariables()
         self.col.add(self.var1)
         self.col.add(self.var2)
-
+        try:
+            self.col.add(self.var2)
+            assert False
+        except:
+            assert True
+            
 
     def test_names(self):
         assert sorted(self.col.keys()) == ['age','temperature']

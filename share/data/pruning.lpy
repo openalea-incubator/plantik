@@ -94,8 +94,8 @@ def Start():
                           perturbation=options.allocation.perturbation)
   time1 = time.time()
   from openalea.plantgl.all import Texture2D, ImageTexture
-  context().turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename=get_shared_data('appletree_texture_sym.jpg')),))
-  context().turtle.setMaterial(8,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename=get_shared_data('apple_leaf_texture.jpg')),))
+  context().turtle.setMaterial(7,Texture2D(image=ImageTexture(filename=get_shared_data('appletree_texture_sym.jpg')),))
+  context().turtle.setMaterial(8,Texture2D(image=ImageTexture(filename=get_shared_data('apple_leaf_texture.jpg')),))
 
 
 def StartEach():
@@ -104,11 +104,10 @@ def StartEach():
 def EndEach(lstring, scene):
   global allocation
   dt = simulation.calendar.dt.days
-  
   if len(lstring)>=options.general.max_elements:
     print 'Naximum number of elements reached %s' % (options.general.max_elements)
     Stop()
-    End(lstring)
+    End(lstring, scene)
 
   if options.general.verbose:
     print simulation.date, getIterationNb()
@@ -228,7 +227,10 @@ def EndEach(lstring, scene):
     # required for the homomorphism to nicely represent the first
     # element as a cylinder with same base and top radius until a
     # better solution is found
-    lstring[0][0].radius = lstring[1][0].radius
+    #try:
+    #   lstring[0][0].radius = lstring[1][0].radius
+    #except:
+    #   pass
     
     # anothor homomorphism trick: the leaf must be shifted to fit the
     # internode radius on which they are put. Similarly for the apices
@@ -249,7 +251,7 @@ def EndEach(lstring, scene):
     useGroup(1)
 
 
-def End(lstring):
+def End(lstring, scene):
     global time1
     global plant
     time2 = time.time()
@@ -257,10 +259,12 @@ def End(lstring):
 
     if options.general.verbose:
         print 'Simulation took %s.' % (time2-time1), ' Creating figures...'
-    plant.lstring = lstring_extract(lstring, label=['Leaf', 'Root', 'Apex','Internode', 'Branch', 'GrowthUnit'])
+    plant.lstring = lstring_extract(lstring, labels=['L', 'P', 'A','I', 'B', 'U'])
     #,'Apex','Internode', 'Leaf'])
     #print plant.lstring
-    
+
+    scene.save('/tmp/test.bgeom')
+    scene.save('/tmp/test.geom')
     
     if options.general.fast == True:
       # not need to save anything
@@ -284,7 +288,9 @@ def End(lstring):
     #outputmtg.close()
 
 
-Axiom: P(plant) B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data, growth_threshold=options.apex.growth_threshold))
+#place this "SetColor(7) @Gc: before B for an extruded version
+
+Axiom: P(plant)  B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data, growth_threshold=options.apex.growth_threshold))
 
 derivation length: int(options.general.max_step)
 
@@ -510,11 +516,14 @@ I(i):
       
       
     #nproduce SetColor(colorcode) TextureScale(3.14*i.radius*RATIO*options.geometry.radius_scale,i.length*RATIO) TextureRotation(0, -137.5*(i.context.path+1),0)
-    nproduce SetColor(colorcode) TextureScale(1,1)
+    nproduce SetWidth(i.radius*RATIO*options.geometry.radius_scale)
+    h = i.context.rank
+    if h == None: h=0
+    nproduce SetColor(colorcode) TextureScale(1,1) TextureTranslation(137.5/180*3.14*h,0)
     #todo ideally the textture should be aligned maybe with TextureTranslation()
     if options.tropism.tropism:
       nproduce @Tp(0,0,-options.tropism.z_tropism) @Ts(options.tropism.elasticity)
-    nproduce F(i.length*RATIO, i.radius*RATIO*options.geometry.radius_scale) 
+    nproduce +(1) F(i.length*RATIO, i.radius*RATIO*options.geometry.radius_scale) 
     nproduce RollL(options.geometry.phyllotactic_angle)
 
 
@@ -550,15 +559,17 @@ L(c):
 
 B(b):
     if options.geometry.branch_view:
+        # this is to prevent F to have different base and top radius
+        nproduce SetWidth(b.radius*RATIO*options.geometry.radius_scale)
         nproduce SetColor(12) F(1, b.radius*RATIO*options.geometry.radius_scale)
 
 U(u):
     if options.geometry.growth_unit_view:
         nproduce SetColor(3)F(.5, u.radius*RATIO*options.geometry.radius_scale)
     
-P(p):
-    nproduce  F(0.01,p.radius*RATIO*options.geometry.radius_scale)
-    
+#P(p):
+#nproduce  F(0.01,p.radius*RATIO*options.geometry.radius_scale)
+
 
 #Wall:
 #    produce [;(6)[@M(-10,0,15)@g(Box(15,0.5,15))][@M(5,0,30)@g(Box(15,15,0.5))][@M(20,0,15)@g(Box(15,0.5,15))][@M(5,15,15)@g(Box(0.5,15,15))][@M(5,-15,5)]]
@@ -573,8 +584,8 @@ def __initialiseContext__(context):
 	from openalea.plantgl.scenegraph import Material, Texture2D, ImageTexture,Color3
 	context.turtle.setMaterial(5,Material(name='Default',ambient=Color3(3,5,2),diffuse=32,))
 	context.turtle.setMaterial(6,Material(name='Default',ambient=Color3(0,0,0),))
-	context.turtle.setMaterial(7,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/appletree_texture_sym.jpg'''),))
-	context.turtle.setMaterial(8,Texture2D(name='APPID_5_182767392',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/apple_leaf_texture.jpg'''),))
+	context.turtle.setMaterial(7,Texture2D(name='APPID_3_195328248',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/appletree_texture_sym.jpg'''),))
+	context.turtle.setMaterial(8,Texture2D(name='APPID_5_196508344',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/apple_leaf_texture.jpg'''),))
 	context.turtle.setMaterial(11,Material(name='Default',ambient=Color3(0,0,134),diffuse=0.402985,specular=Color3(67,67,67),emission=Color3(29,29,29),))
 	context.turtle.setMaterial(12,Material(name='APPID_6_201601160',ambient=Color3(31,1,119),diffuse=0.431929,specular=Color3(63,63,63),emission=Color3(25,25,25),))
 	context.turtle.setMaterial(13,Material(name='APPID_11_201482848',ambient=Color3(62,2,104),diffuse=0.460873,specular=Color3(60,60,60),emission=Color3(21,21,21),))

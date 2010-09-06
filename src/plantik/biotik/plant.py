@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 """plant module
 
-.. module plant
+.. module:: plant
     :synopsis: class to manage a whole plant evolution over time
 
 
@@ -99,7 +99,7 @@ class Plant(object):
         self._time = []
         self._mtg = None
         self._lstring = None
-
+        self.label = 'Plant'
         # could be retrieved from options parameter but let us try to not depends on options !
         self._dt = time_step
 

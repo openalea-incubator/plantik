@@ -8,9 +8,9 @@ class testApex():
 
     def test_default_parameters(self):
         assert self.apex.birthdate == None
-        assert self.apex.context.order == 0
-        assert self.apex.context.path == 1
-        assert self.apex.context.rank == 1
+        assert self.apex.context.order == None
+        assert self.apex.context.height == None
+        assert self.apex.context.rank == None
         assert self.apex.demand == 2
         assert self.apex.metamer_cost == 2
         assert self.apex.livingcost == 0
@@ -46,6 +46,9 @@ class testApex():
         assert self.apex.resource == 0
 
     def test_demand(self):
+        self.apex.context.order = 1
+        self.apex.context.height = 1
+        self.apex.context.rank = 1
         self.apex.demandCalculation()
         assert self.apex.demand == 2
         self.apex.demandCalculation(context="order_height_age")

@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 """Branch module
 
-.. module branch
+.. module:: branch
     :synopsis: Branches utilities and classes
 
 .. topic:: summary

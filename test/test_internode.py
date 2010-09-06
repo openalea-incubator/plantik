@@ -15,6 +15,14 @@ class testInternode():
         # test setters
         self.internode.radius = self.internode.radius
         self.internode.target_radius = self.internode.target_radius
+
+
+        # raidus cannot decrease
+        try:
+            self.internode.radius /= 2
+            assert False
+        except:
+            assert True
     def test_plot(self):
         self.internode.update(10)
         self.internode.plot('length', show=False)

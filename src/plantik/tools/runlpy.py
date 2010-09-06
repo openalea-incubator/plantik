@@ -16,6 +16,10 @@ from math import sqrt
 
 
 def run(filename='experiment1.lpy'):
+    """Run a lsystem
+
+
+    """
     #if filename==None:
     #    raise ValueError('filename must be provided')
     print 'starting simulation'
@@ -69,6 +73,10 @@ def run(filename='experiment1.lpy'):
     Viewer.frameGL.setSize(1024, 1024)
     Viewer.frameGL.saveImage('output.png', 'png')
 
+    lsystem = l
+    lstring = tree
+
+    return (lsystem, lstring)
 
     # first method
     #l.makeCurrent()

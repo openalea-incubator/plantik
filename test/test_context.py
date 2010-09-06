@@ -2,13 +2,13 @@ from openalea.plantik.biotik.context import Context
 
 def test_context():
 
-    c = Context(1,1,1)
-    assert c.path == 1
-    assert c.rank == 1
-    assert c.order == 1
+    c = Context()
+    assert c.height == None
+    assert c.rank == None
+    assert c.order == None
     print(c)
 
-    c.path = 2
+    c.height = 2
     c.order = 2
     c.rank  = 2
 

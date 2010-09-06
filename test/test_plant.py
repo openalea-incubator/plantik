@@ -13,6 +13,9 @@ class test_plant():
     def test_str(self):
         print self.plant
 
+    def test_update(self):
+        #
+        self.plant.update(1,self.plant.lstring)
 
     def test_attributes_read_only(self):
         try:
@@ -26,37 +29,71 @@ class test_plant():
         except:
             assert True
 
+    def test_plot(self):
+        self.plant.plot(show=False)
+
     def test_plot_DARC(self):
         self.plant.plot_DARC(show=False)
+        self.plant.plot_DARC(show=False, normalised=True)
 
     def test_plot_counter(self):
         self.plant.plot_counter(show=False)
 
     def create_data(self):
-        from openalea.lpy import AxialTree
+
+        from openalea.lpy import AxialTree, ParamModule
+        from openalea.mtg.io import mtg2axialtree
+
+
+        parameters = {'A': ['Apex'], 'I': ['Internode'],  'L': ['Leaf'],'P':['Plant'], 'U':['GrowthUnit'], 'B':['Branch']}
+        mtgtools = MTGTools()
+        mtgtools.load_pickle(get_shared_data('pruning_example.mtg'))
+        lstring = mtg2axialtree(mtgtools.mtg, parameters)
+        self.plant.lstring = lstring
+        self.plant.mtgtools.mtg = mtgtools.mtg
+
+
+
+
+        """
+        # keep this to show how to declare an axialtree from scrach
+        from openalea.lpy import AxialTree, ParamModule
+        from openalea.plantik import Apex, Leaf, Internode, Branch, GrowthUnit, Plant
         N = 5
-        a = AxialTree(['BU'])
+        P = ParamModule('P', Plant(1))
+        A = ParamModule('A', Apex())
+        L = ParamModule('L', Leaf(resource_per_day=0.5))
+        I = ParamModule('I', Internode())
+        B = ParamModule('B', Branch())
+        U = ParamModule('U', GrowthUnit())
+
+        a = AxialTree([B,U, A])
         self.plant.update_counter(a)
-        a = AxialTree(['BUA'])
+        a = AxialTree([B,U,A])
         self.plant.update_counter(a)
-        a = AxialTree(['BUAIALA'])
+        a = AxialTree([B,U,A, I, L, A])
         self.plant.update_counter(a)
-        a = AxialTree(['BUAILAILAILIA'])
+        a = AxialTree([B, U, A, I, L, A, I, L, A])
         self.plant.update_counter(a)
-        a = AxialTree(['BUAILAILAILIIIIA'])
+        a = AxialTree([B, U, A, I, L, A, I, L, A, I, L, A])
         self.plant.update_counter(a)
+
+        self.lstring = a
 
         from pylab import randn
         for x in range(N):
-            self.plant.DARC.D.append(randn()) 
-            self.plant.DARC.A.append(randn()) 
-            self.plant.DARC.R.append(randn()) 
-            self.plant.DARC.C.append(randn()) 
+            self.plant.DARC.D.append(randn())
+            self.plant.DARC.A.append(randn())
+            self.plant.DARC.R.append(randn())
+            self.plant.DARC.C.append(randn())
+            self.plant.DARC.pipe_cost.append(randn())
+        """
 
 
-
-        self.plant._time = range(5)
+        #self.plant._time = range(5)
 
 
     def test_str(self):
         print self.plant
+
+

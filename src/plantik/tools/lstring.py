@@ -1,38 +1,46 @@
-"""
-.. topic:: lstring.py summary
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+"""lstring module
+
+.. module:: lstring
+    :synopsis: A module to manipulate lstrings and lsystems
+
+.. topic:: summary
 
     A module to manipulate lstrings and lsystems
 
-    :Code status: mature
-    :Documentation status: draft
+    :Code: mature
+    :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :References:
-        1. Colin Smith, Costes Evelyne, On the Simulation of Apple Trees Using 
-           Statistical and Biomechanical Principles, INRIA technical report, 2007
+    :Revision: $Id$
+    :Usage:
+        >>> from openalea.plantik.tools.lstring import *
 
-    :Revision: $Id: fruit.py 8981 2010-05-25 12:12:34Z cokelaer $
+.. testsetup::
+
+    from openalea.plantik.tools.lstring import *
+
 """
-
-
 from openalea.lpy import Lsystem
 
+def lstring_extract(lstring, labels):
+    """Parse an lstring an return lstring containing only objects with names found in **label**
 
+    :param AxialTree lstring: a lstring to scan
+    :param str label: a string or list of string that shouls be names of module found in the lstring.
 
+    .. doctest::
+        :options: +SKIP
 
-def lstring_extract(lstring, label):
-    """
-    Returns a list of objects of type=type found in the lstring
-
-    >>> lstring_extract(lstring, 'Apex')
+        >>> from openalea.plantik.tools.lstring import lstring_extract
+        >>> lstring_extract(lstring, 'A')
+        >>> lstring_extract(lstring, ['A', 'I'])
     """
     data = []
     for elt in lstring:
         # could not use isinstance for some reason ?
-        try:
-            if elt[0].label in label:
-                data.append(elt[0])
-        except:
-            pass
+        if elt.name in labels:
+            data.append(elt[0])
     if len(data)==0:
         import warnings
         warnings.warn("cannot found any %s in the lstring" % type, UserWarning)
@@ -40,13 +48,6 @@ def lstring_extract(lstring, label):
 
 
 
-def _read_lsystem(filename):
-    from openalea.mtg.io import lpy2mtg
-    l = Lsystem(filename)
-    return lpy2mtg(lstring,l)
+#def read_lsystem(filename):
+#    l = Lsystem(filename)
 
-
- 
-def _axialtree():
-    #[mtg.property('Apex')[a].demand for a in mtg.property('Apex').keys()]
-    pass

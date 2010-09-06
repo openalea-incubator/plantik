@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""
-.. topic:: movies summary
+"""movies module
+
+.. module:: movies
+    :synopsis:  Functionalities to create movies.
+    :platform: linux for now since you need **mencoder** tool.
+
+.. topic:: summary
 
     Functionalities to create movies.
 
     :Code status: mature
     :Documentation status: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :References:
-    :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
+    :Revision: $Id$
+    :Usage: >>> from openalea.plantik.tools.movies import *
+    
+.. testsetup::
+    from openalea.plantik.tools.movies import *
+
 """
 
 import platform
@@ -32,7 +41,7 @@ def create_movie(input_glob='*.png', output_filename='output', format='avi', wid
 
     .. note:: the linux command is
 
-        mencoder mf://@/tmp/file.txt -mf w=800:h=600:fps24:type=png -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o output.avi
+        mencoder mf://@/tmp/file.txt -mf w=800:h=600:fps:24:type=png -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o output.avi
 
     >>> create_movie('test*.png', output_filename='movie1', format='avi', fps=20)
 

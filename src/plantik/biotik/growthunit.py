@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 """GrowthUnit module
 
-.. module growthunit
+.. module:: growthunit
     :synopsis: GrowthUnit utilities and classes
 
 .. topic:: summary

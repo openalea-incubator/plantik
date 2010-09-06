@@ -6,18 +6,17 @@ Reference guide
 .. contents::
 
 
-
 Simulation sub package
 =========================
 
-.. autosummary::
-
-    openalea.plantik.simulation.simulation.SimulationInterface
-    openalea.plantik.simulation.simulation.Simulation
-    openalea.plantik.simulation.calendar.Calendar
-    openalea.plantik.simulation.calendar.Event
-    openalea.plantik.simulation.calendar.Events
-
+:mod:`openalea.plantik.plant.allocation` module
+-----------------------------------------------------
+.. automodule:: openalea.plantik.plants.allocation
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: see allocation module
 
 :mod:`openalea.plantik.simulation.simulation` module
 -----------------------------------------------------
@@ -40,14 +39,39 @@ Simulation sub package
 
 tools sub package
 ====================
-.. autosummary::
 
-    openalea.plantik.tools.config.ReadConfigFile
-    openalea.plantik.tools.misc.title
-    openalea.plantik.tools.lstring.lstring_extract
-    openalea.plantik.tools.surface.createSurface
-    openalea.plantik.tools.colors.Colors
+:mod:`openalea.plantik.tools.levenshtein` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.levenshtein
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see levenshtein module
 
+
+:mod:`openalea.plantik.tools.boxcounting` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.boxcounting
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see boxcounting module
+
+:mod:`openalea.plantik.tools.convex` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.convex
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see convex module
+
+:mod:`openalea.plantik.tools.movies` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.movies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see movies module
 
 :mod:`openalea.plantik.tools.config` module
 --------------------------------------------------------------
@@ -77,6 +101,16 @@ tools sub package
     :synopsis: see misc module
 
 
+:mod:`openalea.plantik.tools.mtgtools` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.mtgtools
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: see mtgtools module
+
+
 
 :mod:`openalea.plantik.tools.lstring` module
 --------------------------------------------------------------
@@ -100,19 +134,8 @@ tools sub package
 
 
 
-biotik sub package
-=========================
-
-**Overview**
-
-.. autosummary::
-
-    openalea.plantik.biotik.component.ComponentInterface
-    openalea.plantik.biotik.growthunit.GrowthUnit
-    openalea.plantik.biotik.branch.Branch
-    openalea.plantik.biotik.internode.Internode
-    openalea.plantik.biotik.leaf.Leaf
-    openalea.plantik.biotik.apex.Apex
+biotik sub package (tools)
+==========================
 
 :mod:`openalea.plantik.biotik.collection` module
 --------------------------------------------------------------
@@ -129,40 +152,6 @@ biotik sub package
     :undoc-members:
     :show-inheritance:
     :synopsis: see biotik module
-
-
-:mod:`openalea.plantik.biotik.root` module
---------------------------------------------------------------
-.. automodule:: openalea.plantik.biotik.root
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-    :synopsis: see root module
-
-:mod:`openalea.plantik.biotik.internode` module
---------------------------------------------------------------
-.. automodule:: openalea.plantik.biotik.internode
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :synopsis: see collection module
-
-
-:mod:`openalea.plantik.biotik.leaf` module
---------------------------------------------------------------
-
-.. inheritance-diagram::    openalea.plantik.biotik.leaf
-
-
-.. automodule:: openalea.plantik.biotik.leaf
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-    :synopsis: see leaf module
-
-
 
 :mod:`openalea.plantik.biotik.context` module
 --------------------------------------------------------------
@@ -182,6 +171,9 @@ biotik sub package
     :inherited-members:
     :show-inheritance:
     :synopsis: see growth module
+
+biotik sub package (components)
+===============================
 
 :mod:`openalea.plantik.biotik.apex` module
 --------------------------------------------------------------
@@ -209,4 +201,39 @@ biotik sub package
     :show-inheritance:
     :synopsis: see growthunit module
 
+:mod:`openalea.plantik.biotik.internode` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.internode
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see collection module
 
+:mod:`openalea.plantik.biotik.leaf` module
+--------------------------------------------------------------
+.. inheritance-diagram::    openalea.plantik.biotik.leaf
+
+.. automodule:: openalea.plantik.biotik.leaf
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: see leaf module
+
+:mod:`openalea.plantik.biotik.plant` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.plant
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: see plant module
+
+:mod:`openalea.plantik.biotik.root` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.biotik.root
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: see root module

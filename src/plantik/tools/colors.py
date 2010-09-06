@@ -4,7 +4,7 @@
 
 .. module:: color
     :synopsis: aliases to color materials
-    
+
 .. topic:: summary
 
     A module dedicated to colors defined in PlantGL format.
@@ -12,7 +12,7 @@
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :Revision: $Id: colors.py 9007 2010-05-26 14:34:18Z cokelaer $
+    :Revision: $Id$
     :Usage: >>> from openalea.plantik.tools.colors import *
 
 .. testsetup:: 
@@ -29,13 +29,13 @@ from vplants.plantgl.all import Material, Color3
 
 class Colors():
     """Define the indices for the colours to be used in the geometrical representation.
-    
+
     There are some attributes that are defined as `Material` from `PlantGL` package.
     For instance, the color black is define as follows::
 
         black  = Material(Color3(0,0,0),2,Color3(40,40,40),Color3(0,0,0),1,0)
 
-    For now, colors are `black`, `red` and `leaf`.
+    For now, colors are `black`, `red` and `leaf`, and `blue`.
 
 
     .. doctest::
@@ -65,6 +65,6 @@ class Colors():
         shininess = 1
 
         self.black  = Material('black', Color3(0,0,0), 2, Color3(40,40,40), Color3(0,0,0), 1, transparency)
-        self.red    = Material('red', Color3(255,0,0),0,Color3(0,0,0),Color3(0,0,0),1, transparency)
-        self.leaf    = Material('leaf', Color3(15,35,14),3.02857,Color3(47,47,47),Color3(0,0,0),1,transparency)
-
+        self.red    = Material('red',   Color3(255,0,0), 0,Color3(0,0,0),Color3(0,0,0),1, transparency)
+        self.leaf   = Material('leaf',  Color3(15,35,14), 3.02857,Color3(47,47,47),Color3(0,0,0),1,transparency)
+        self.blue   = Material('blue',  Color3(0,0, 255), 2, Color3(0,0,0), Color3(0,0,0), 1, transparency)

@@ -3,6 +3,7 @@
 """Surface module
 
 .. module:: surface
+    :synopsis: Facilities to read Lstudio surface files
 
 .. topic:: Summary
 
@@ -45,13 +46,14 @@ def createSurface(filename=None, ustride=10, vstride=10):
     :param int ustride: number of points in u direction
     :param int vstride: number of points in v direction
 
+    ::
 
-    >>> stride_number = 4
-    >>> leaf_surface = createSurface('leaf_surface.s', stride_number, stride_number)
+        >>> stride_number = 4
+        >>> leaf_surface = createSurface('leaf_surface.s', stride_number, stride_number)
 
-    then in Lpy:
+    then in Lpy::
 
-    >>> produce PglShape(leaf_surface, r)
+        >>> produce PglShape(leaf_surface, r)
     """
     try:
         f = open(filename,'r')

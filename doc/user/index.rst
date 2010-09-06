@@ -13,4 +13,5 @@ plantik User Guide
 .. toctree::
     :maxdepth: 2
 
+    installation.rst
     manual.rst

@@ -13,7 +13,7 @@
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
+    :Revision: $Id$
     :Usage:
         >>> from openalea.plantik.simulation.simulation import *
 
@@ -69,10 +69,11 @@ class SimulationInterface(object):
     """
     def __init__(self, dt=1., starting_date=2000., ending_date=2010):
 
-        self._ending_date = self.convert_fractional_year_to_date(ending_date)
+        self._ending_date = self.convert_input_date(ending_date)
 
         # set up the calendar, must convert the floating year to a date before
-        date = self.convert_fractional_year_to_date(starting_date)
+        date = self.convert_input_date(starting_date)
+        self._starting_date = date
         self.calendar = Calendar(year=date.year, month=date.month, day=date.day,
                                 delta_in_days=dt)
 
@@ -87,6 +88,19 @@ class SimulationInterface(object):
 
         #: read-only attribute, alias to calendar.date 
         #self._date = self.calendar.date
+
+    def convert_input_date(self, date):
+        if type(date) in [float, int]:
+            return self.convert_fractional_year_to_date(date)
+        elif type(date) == str:
+            try:
+                date = datetime.datetime.strptime(date, "%Y-%m-%d")
+            except:
+                raise ValueError("input date does not seem to be in the format year-month-day e.g., 2000-12-30")
+            return date
+        else:
+            raise TypeError("date must be int, float (fractional year) or string format such as 2000-12-30")
+
 
     @staticmethod
     def convert_fractional_year_to_date(year):
@@ -108,15 +122,17 @@ class SimulationInterface(object):
         res = "Current time is %s" % str(self._get_date())
         return res
 
+    def _get_starting_date(self):
+        return self._starting_date
+    starting_date = property(fget=_get_starting_date, doc="getter to starting date")
+
     def _get_ending_date(self):
         return self._ending_date
-    ending_date = property(fget=_get_ending_date, 
-                    doc="returns ending year of the simulation")
+    ending_date = property(fget=_get_ending_date, doc="getter to ending date")
 
     def _get_date(self):
         return self.calendar.date
-    date = property(fget=_get_date, 
-                    doc="returns date from calendar instance")
+    date = property(fget=_get_date, doc="returns date from calendar instance")
 
     def _get_time_elapsed(self):
         return self._time_elapsed
@@ -158,10 +174,8 @@ class Simulation(SimulationInterface):
 
     Constructor is the same constructor as :class:`~openalea.plantik.simulation.simulation.SimulationInterface` for the time being.
     """
-    def __init(self, dt=1, starting_date=2000., ending_year=2010):
-        SimulationInterface.__init__(self,
-            dt=dt,
-            starting_date=starting_date,
-            ending_year=ending_year)
+    def __init__(self, dt=1, starting_date=2000., ending_date=2010):
+        SimulationInterface.__init__(self, dt=dt, starting_date=starting_date,
+            ending_date=ending_date)
 
 

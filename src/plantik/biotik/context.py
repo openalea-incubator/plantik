@@ -1,15 +1,22 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""
+"""Context module
+
+.. module:: context
+    :synopsis: context definition
+
 .. topic:: context summary
 
-    classes to manipulate context
+    context definition
 
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage: >>> from openalea.plantik.biotik.context import *
+
+.. testsetup::
+    from openalea.plantik.biotik.context import *
 """
 
 
@@ -21,7 +28,7 @@ class Context(object):
     see the contuctor for more information
 
     >>> c = Context()
-    >>> assert c.order == 1
+    >>> assert c.order == None
     >>> c.order = 3
     >>> assert c.order == 3
 

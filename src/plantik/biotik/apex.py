@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 """Apex module
 
-.. module apex
+.. module:: apex
     :synopsis: Apices functionalities and classes
 
 

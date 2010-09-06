@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__revision__ = "$Id: $"
+__revision__ = "$Id$"
 
 import sys
 import os
@@ -59,8 +59,11 @@ setup(
 
     # Dependencies
     setup_requires = ['openalea.deploy'],
-    install_requires = [],
+    install_requires = ['vplants.plantgl', 'openalea.mtg'],
+    #'openalea.sequence_analysis'],
     dependency_links = ['http://openalea.gforge.inria.fr/pi'],
+    include_package_data = True,
+    share_dirs = {'share':'share'},
 
 
     )

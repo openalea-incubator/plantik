@@ -15,6 +15,12 @@ class testGrowthUnit():
         self.gu.radius = 0.2
         assert self.gu.radius == 0.2
 
+        # radius cannot decrease
+        try:
+            self.gu.radius = self.gu.radius/2.
+            assert False
+        except:
+            assert True
 
     def test_length(self):
         assert self.gu.length == 0

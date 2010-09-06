@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 """Branch module
 
-.. module branch
+.. module:: branch
     :synopsis: MTG utilities and data extraction
 
 .. topic:: summary
@@ -47,8 +47,8 @@ class MTGTools(object):
 
     Then you can access to specialised methods:
 
-    >>> res = mtgtools.getVolumeInternodes()
-    >>> res = mtgtools.getVolumeInternodes(order=1)
+    >>> res = mtgtools.getVolumeInternodes()    #doctest: +SKIP
+    >>> res = mtgtools.getVolumeInternodes(order=1) #doctest: +SKIP
 
     or standard MTG usage using again the :attr:`mtg` attribute. 
 
@@ -59,8 +59,42 @@ class MTGTools(object):
         the :attr:`ids` to store the indices of all leaves, internodes, growth units, apices and branches. This is quite handy to
         manipulate MTG. Similarly, the :meth:`update` method is also called when using :meth:`load_pickle`.
 
-    Another great feature of this class is to allows users to create a database out of MTG, asusming that is fulfill
-    some restrictions. See :meth:`createDB`, :meth:`select_id` and  :meth:`requestDB` methods for more details.
+    :Database interaction:
+
+    Another great feature of this class is to allows users to create a database out of MTG.
+    See :meth:`createDB`, :meth:`select` and  :meth:`select_attribute`, :meth:`requestDB` methods for more details.
+    To give you an insight, it allows you to retrieve a list of ids given some criteria. It work as follows::
+
+
+        [mtgtools.mtg.property('Branch')[id].length for id in mtgtools.select(label="B", order=1)]
+        175us
+
+    which command is twice as fast (and simpler) as a standard call to::
+
+        [mtgtools.mtg.property('Branch')[id].length for id in mtgtools.mtg.vertices() if mtgtools.mtg.label(id)=="B" and mtgtools.mtg.order(id)==1]
+        795us
+
+    and 90 times as fast as a command badly written (notice the inversion of if statements)::
+
+        [mtgtools.mtg.property('Branch')[id].length for id in mtgtools.mtg.vertices() if mtgtools.mtg.order(id)==1 and mtgtools.mtg.label(id)=="B"]
+        15ms
+
+    Yet, if you requete is simple (only on the label of vertices), it is even faster to directly use the list of ids stored in :attr:`ids` as follows::
+
+        [mtgtools.mtg.property('Branch')[id].length for id in mtgtools.ids['B'] if mtgtools.mtg.order(id)==1]
+        58us
+
+    In general, you would only need the :meth:`select_attribute` method and use it as follows:
+
+    .. plot::
+        :include-source:
+        :width: 50%
+
+        from openalea.plantik import *
+        mtgtools = MTGTools()
+        mtgtools.load_pickle(get_shared_data('pruning_example.mtg'))
+        import pylab
+        pylab.hist(mtgtools.select_attribute("area", label="L"))
 
     """
     def __init__(self, mtg=None ):
@@ -77,6 +111,7 @@ class MTGTools(object):
         :attributes:
 
             * :attr:`ids`: dictionary containing the indices for each label
+            * :attr:`parameters`: dictionary containing the indices for each label
 
 
 
@@ -85,6 +120,9 @@ class MTGTools(object):
         self.ids = {'L':None,'I':None,'U':None,'B':None, 'A':None}
         self.scales = {'A':4,'I':4,'L':4, 'P':1, 'B':2, 'U':3}
         self.modules = ['A','I','L','U','B']
+
+        #: dictionary giving the full Label of the following labels: A, I, L, P, U, B
+        # that are: Apex, Internode, Leaf, Plant, GrowthUnit, and Branch
         self.parameters = { 'A': ['Apex'], 
                             'I': ['Internode'],  
                             'L': ['Leaf'],
@@ -95,41 +133,57 @@ class MTGTools(object):
         self.DB = None
 
     def save_pickle(self, filename):
+        """Save the MTG into a pickle file
+
+        :param str filename: 
+
+        .. todo:: set an output directory or temp file into a temp directory.
+        """
         import pickle
         if self.mtg != None:
             pickle.dump(self.mtg, open(filename, "w"))
 
     def load_pickle(self, filename):
+        """Load a pickled file.
+
+        :param str filename: the filename to load with :mod:pickle
+        :return: the mtg file 
+        """
         import pickle
         try:
             mtg = pickle.load(open(filename, "r"))
             self.mtg = mtg #this setter also calls the update() method!
         except:
-            pass
+            import warnings
+            warnings.warn('Picled file %s could not be found' % filename)
 
-    def update(self):
+    def update(self, debug=0):
         """update the mtg and relevant information
 
-        :param MTG mtg: then new mtg
+        :param MTG mtg: the new mtg
 
-        update the ids of the leaves, apices, branches, growthunits and internodes.
+        This function parse the MTG, and extract the ids of all labels found in :attr:`parameters`.
+
+        Then ids are accessible via the :attr:`ids` and allows to speed up further request made on
+        the MTG. 
+        
 
         """
-        import inspect
-        if inspect.stack()[1][3] != '_setMTG':
-            import warnings
-            warnings.warn("no need to call update() function. Use the setter for mtg attribute instead that automatically calls update()")
-        for module in ['A','I','L']:
-            self.ids[module] = [id for id in self.mtg.vertices(scale=4) if self.mtg.class_name(id)==module]
-        self.ids['U'] = [id for id in self.mtg.vertices(scale=3) if self.mtg.class_name(id)=='U']
-        self.ids['B'] = [id for id in self.mtg.vertices(scale=2) if self.mtg.class_name(id)=='B']
+        if debug==1:
+            import inspect
+            if inspect.stack()[1][3] != '_setMTG':
+                import warnings
+                warnings.warn("no need to call update() function. Use the setter for mtg attribute instead that automatically calls update()")
+
+        for k,v in self.parameters.iteritems():
+            self.ids[k] =  self.mtg.properties()[v[0]].keys()
 
         #check correctness of number of elements.
         length = 0
         for module in self.modules:
             length += len(self.ids[module])
         # Plant=1 + mtgroot=1
-        #assert len(self.mtg) == length+2
+        assert len(self.mtg) == length+2
 
 
     def _setMTG(self, mtg):
@@ -145,10 +199,8 @@ class MTGTools(object):
 
         :param int order: select only branches at this order
 
-        timeit gives 45 us
-
         ::
-        
+
             getBranchesLength(order=1)
         """
         return self.getLength(order=order, type='B')
@@ -165,6 +217,14 @@ class MTGTools(object):
 
         getLength(type='U', order=0)
         getLength(type='B', order=1)
+
+        This function does not use the DB but the ids store while setting the MTG attribute.
+        Therefore, using the ids stored in a list, it is quite fast but limite to order and type. 
+        For instance::
+
+            %timeit mtgtools.getLength(order=1, type='B')
+            45us
+
         """
         module = self.parameters[type][0]
         if order != None:
@@ -175,6 +235,13 @@ class MTGTools(object):
         return res
 
     def getRank(self, type=None, order=None):
+        """returns the ranks of all object of a given type and order
+
+        :param str type:
+        :param int order:
+        :return: list of ranks
+
+        """
         module = self.parameters[type][0]
         from openalea.mtg.algo import rank 
         if order != None:
@@ -192,7 +259,20 @@ class MTGTools(object):
 
         """
         import sqlite3
-        conn = sqlite3.connect(self.dbfile[1])
+        try:
+            conn = sqlite3.connect(self.dbfile[1])
+        except AttributeError, e:
+            print "MTGTools error: Cannot access dbfile ? Trying to create one by calling createDB() method."
+            try:
+                self.createDB()
+            except:
+                raise RunTimeError("DB could not be created. Try manually....")
+            else:
+                print "DB created succesfully. Connecting...",
+                conn = sqlite3.connect(self.dbfile[1])
+                print "succeeded."
+
+
         self.DB = conn.cursor()
         self.DB.row_factory = self._rowFactoryDB
 
@@ -223,7 +303,11 @@ class MTGTools(object):
         >>> assert type(rows) == list
 
         """
+
+        if self.DB == None:
+            self.connectDB()
         res = self.DB.execute(request)
+
         if column is not None:
             try:
                 res = [x[column] for x in res]
@@ -245,7 +329,7 @@ class MTGTools(object):
         """Create a database out of a MTG obiject.
 
         Stores the label, rank, id, order and scale into a database that can
-        be accessed later on using the :meth:`requestDB` and :meth:`select_id` methods.
+        be accessed later on using the :meth:`requestDB` and :meth:`select` methods.
         The requests are standard SQL commands and the table to look at is called (you guess
         it?):  **mtg**
 
@@ -259,6 +343,13 @@ class MTGTools(object):
             mtgtools.createDB()
             mtgtools.connectDB()
             mtgtools.requestDB("select * from mtg")
+    
+        if you do not like SQL request, you may try the :meth:`select` method.
+        The previous command would be equivalent to 
+
+        ::
+
+            mtgtools.select(select="*")
         """
         import sqlite3
         import tempfile
@@ -266,7 +357,7 @@ class MTGTools(object):
         self.dbfile = tempfile.mkstemp('dbMTG')
         conn = sqlite3.connect(self.dbfile[1])
         c = conn.cursor()
-        c.execute("create table mtg (scale int, ord int, label text, rank int, id int)")
+        c.execute("create table mtg (scale int, ord int, label text, rank int, id integer)")
         vertices = self.mtg.vertices()
         for id in vertices:
             scale = self.mtg.scale(id)
@@ -277,10 +368,53 @@ class MTGTools(object):
         conn.commit()
         c.close()
 
+    def select_attribute(self, attribute, **kargs):
+        """Select attribute given user parameter inputs
 
-    def select_id(self, select="id", order=None, label=None, scale=None, rank=None, id=None):
+        :param attribute: attribute to extract from the nodes that match the other input parameters
+        :param label: select node that match this label
+        :param order: select node that match this order
+        :param scale: select node that match this scale
+        :param rank: select node that match this rank
+
+        ::
+
+            data = mtgtools.select_attribute("length", order=1, label="B")
+
+        .. seealso:: :meth:`select`, :meth:`requestDB`
+        """
+
+        label = kargs.get("label")
+        if kargs.get("label") == None:
+            print "provide a valid label.Labels are %s" % self.parameters.keys()
+            return
+        return [getattr(self.mtg.property(self.parameters[label][0])[id], attribute) for id in self.select(**kargs)]
+
+
+    def select(self, select="id", order=None, label=None, scale=None, rank=None):
+        """Return ids in the DB that fit the user parameter inputs.
+
+        :param label: select node that match this label
+        :param order: select node that match this order
+        :param scale: select node that match this scale
+        :param rank: select node that match this rank
+
+        ::
+
+            ids = mtgtools.select(select="id", order=1, label="B")
+
+        then::
+
+            [getattr(mtgtools.mtg.property('Branch')[id], 'length') for id in ids]
+
+
+        .. seealso:: :meth:`select_attribute`, :meth:`requestDB`
+        """
+        assert select in ["id", "ord", "scale", "label", "rank"]
         request = "select %s from mtg " % select
         where = False
+
+        # make this code more robust using kargs 
         if order !=None:
             if where == False: request += " where ";  where = True
             request += "ord == %s " % order
@@ -305,20 +439,8 @@ class MTGTools(object):
             else:
                 request += " and "
             request += "rank == '%s' " % rank
-        if id !=None:
-            if where == False: 
-                request += " where ";  
-                where = True
-            else:
-                request += " and "
-            request += "id == '%s' " % id
-        self.createDB()
-        self.connectDB()
-        try:
-            res = self.requestDB(request, column=select)
-        except:
-            print "request " + request  + " failed."
-        self.closeDB()
+        res = self.requestDB(request, column=select)
+        #self.closeDB()
         return res
 
 
@@ -331,25 +453,23 @@ class MTGTools(object):
         >>> from openalea.plantik import get_shared_data
         >>> mtgtools = MTGTools()
         >>> mtgtools.load_pickle(get_shared_data('pruning_example.mtg'))
-        >>> res = mtgtools.getVolumeInternodes()
-        >>> res = mtgtools.getVolumeInternodes(order=1)
+        >>> res = mtgtools.getVolumeInternodes()  #doctest: +SKIP
+        >>> res = mtgtools.getVolumeInternodes(order=1) #doctest: +SKIP
 
         """
         from openalea.plantik import Internode
-        ids = self.select_id(order=order, label="I")
+        ids = self.select(order=order, label="I")
         return sum([self.mtg.property('Internode')[id].volume for id in ids ])/ Internode.volume_standard
 
-
     def getAreaLeaves(self, order=None):
-        """return total are at a given order
+        """return area leaves given order
 
         :param int order: if no order is provided, returns total volume
 
-        >>> res = mtgtools.getAreaLeaves()
-        >>> res = mtgtools.getAreaLeaves(order=1)
+        >>> res = mtgtools.getAreaLeaves() #doctest: +SKIP
+        >>> res = mtgtools.getAreaLeaves(order=1) #doctest: +SKIP
         """
-        ids = self.select_id(order=order, label="L")
-        return sum([self.mtg.property('Leaf')[id].area for id in ids ])
+        return self.select_attribute("area", order=order, label="L")
 
 
     def hist_apex_order(self, show=False):
@@ -363,26 +483,114 @@ class MTGTools(object):
             mtgtools.hist_apex_order() 
 
         """
-        orders = self.select_id(select="ord", label='A')
+        orders = self.select(select="ord", label='A')
         import pylab
         pylab.figure()
         pylab.clf()
         pylab.hist(orders, range(0,max(orders)+1))
         if show: pylab.show()
 
+    def set_order_path_rank(self):
+        """Extract the order,rank.height and populate the object context accordingly
+
+
+        This function parse the whole MTG, extract the rank, order and height and update
+        the context instance of each object. This is used by pruning.lpy, and more precisely,
+        this is used to compute the context weight. 
+
+        .. seealso:: :class:`~openalea.plantik.biotik.context.Context`
+
+        .. todo:: to be optimised.
+        """
+        from openalea.mtg.algo import rank, order, height
+
+        g = self.mtg
+
+        # first the branches
+        for id in g.vertices():
+            node = g.node(id)
+            if node.scale()>=2:
+                obj = g.property(self.parameters[node.label][0])[id]
+                try:
+                    if obj.context.order == None:
+                        obj.context.rank = rank(g, id)
+                        obj.context.order = order(g, id)
+                        obj.context.height = height(g, id)
+                except:
+                    print g[id]
+
+
+    def get_branch_radius_on_trunk(self):
+        """return all radius of branches on the trunk"""
+        return self.select_attribute("radius", label="B", order=1)
+
+    def get_branch_length_on_trunk(self):
+        """return all length of branches on the trunk"""
+        return self.select_attribute("length", label="B", order=1)
+
+    def get_axes(self):
+        """return indices of all branches
+        
+        .. note:: same as self.select(label="B")
+        """
+        return self.select(label="B")
+
+    def create_sequence_branch_on_trunk(self):
+        """return sequence of the branch category on trunk
+
+        where category are L, M, or S
+        """
+        var1 = self.get_branch_length_on_trunk()
+        from openalea.sequence_analysis.sequences import Sequences
+        return Sequences(convert2LMS(var1))
+
+    def plot(self, show=True):
+        import pylab
+        pylab.figure(1)
+        pylab.hist(self.get_branch_radius_on_trunk())
+        pylab.title('Branch radius histogram on the trunk')
+        if show==True:pylab.show()
+        pylab.figure(2)
+        pylab.hist(self.get_branch_radius_on_trunk())
+        pylab.title('Branch radius histogram on the trunk')
+        if show==True:pylab.show()
 
 def branch_rank_on_trunk(g):
     return [g.property('Branch')[id].context.rank for id in g.components(1) if g.class_name(id) == 'B']
 
 
 def convert2LMS(length):
-    """ values fixed Costes et al 2003 or equivalent"""
-    if length<0.05:
-        return 1
-    elif length< 0.2:
-        return 2
-    else:
-        return 3  
+    """Convert a length into labels L, M, S
+
+
+    L, M, S stand for Long, Medium, Samll. 
+    
+    * S: if l<0.05
+    * M if 0.05<=l<0.2
+    * L if l>=0.2
+
+    values fixed Costes et al 2003 or equivalent
+
+    :param float length:
+    :return: int 1 for S, 2 for M and 3 for L
+    """
+    if type(length) != list:
+        if length<0.05:
+            return 1
+        elif length< 0.2:
+            return 2
+        else:
+            return 3
+    elif type(length) == list:
+        res = []
+        for x in length:
+            if length<0.05:
+                res.append(1)
+            elif length< 0.2:
+                res.append(2)
+            else:
+                res.append(3)
+        return res
 
 def create_sequences(g):
     """
@@ -390,6 +598,9 @@ def create_sequences(g):
     1: Short
     2: Medium
     3: Long
+
+
+    to be cleaned and added to mtgtools
     """
     from openalea.sequence_analysis import Sequences
     Activate(g)
@@ -410,64 +621,23 @@ def create_sequences(g):
     new = numpy.sort(a, order='index')
     return Sequences([[[int(x)] for x in new['length']]]), new
 
-
-def activate(g):
-    Activate(g)
-
-def get_trunk_index(g):
+def get_trunk_index(g ):
+    """ to be removed"""
     return Components(g.root, Scale=2)[0]
-
-def get_trunk_sequences(g):
-    pass
-
-def get_axes(g):
-    return Components(g.root, Scale=2)
-
-def get_all_branch_length(g):
-    return [g.property('Branch')[x].length   for x in Components(g.root, Scale=2)]
-
-def _get_trunk_branch_length(g):
-    """ use mtgtools.getBranchLength, twice as fast"""
-    trunk_id = get_trunk_index(g)
-    indices = Sons(trunk_id, EdgeType='+')
-    length = [g.property('Branch')[x].length   for x in indices]
-    return length
-
-def get_trunk_branch_radius(g):
-    trunk_id = get_trunk_index(g)
-    indices = Sons(trunk_id, EdgeType='+')
-    length = [g.property('Branch')[x].radius   for x in indices]
-    return length
 
 def get_branch_metamer_number_on_trunk(g):
     """ get branches on the trunk and returns number of metamer/internode
-    in each of these branches"""
+    in each of these branches
+
+    to be removed"""
     length = [len([y for y in Components(x, Scale=4) if Class(y)=='I']) for x in Sons(get_trunk_index(g), EdgeType='+')]
     return length
 
 def plot(g):
+    """to be removed"""
     import pylab
-    pylab.hist(get_trunk_branch_length(g))
-    pylab.title('Branch length histogram on the trunk')
-    pylab.show()
-    pylab.figure(2)
-    pylab.hist(get_trunk_branch_radius(g))
-    pylab.title('Branch radius histogram on the trunk')
-    pylab.show()
     pylab.figure(3)
     pylab.hist(get_branch_metamer_number_on_trunk(g))
     pylab.title('Metamer number histogram (all branches on the trunk)')
     pylab.show()
 
-
-
-def create_sequence1(g):
-    var1 = get_trunk_branch_length(g)
-    from openalea.sequence_analysis.sequences import Sequences
-    return Sequences(var1)
-
-def stat(g):
-    print 'branch length:', get_trunk_branch_length(g)
-    print 'branch category:', map(convert2LMS, get_trunk_branch_length(g))
-
-#Plot(v1, 1,6, "Gaussian", ViewPoint="SegmentProfile")

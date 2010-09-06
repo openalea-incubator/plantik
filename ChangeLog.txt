@@ -1,2 +1,15 @@
+
+* 2010 august 30th: refactoring 
+    * add branch, growthunit modules to manipulate plant at different scales
+    * complete collection to manipulate set of variables to store data over time
+      such as demand, resource, radius, length
+    * complete component a base abstract class common to all biological component 
+    * complete simular and calendar modules
+
+  documentation:
+
+  * all modules above have complete documentation and tests
+  * add manual: installation.rst
+  
 * 2010 june : add this package (simulation, calendar, component, root, leaf
   and config modules added) plus documentation and test suite.

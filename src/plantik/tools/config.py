@@ -13,7 +13,7 @@
     :Code: mature
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
-    :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
+    :Revision: $Id$
     :Usage: >>> from openalea.plantik.tools.config import *
 
 .. testsetup::

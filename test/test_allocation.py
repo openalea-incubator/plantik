@@ -53,6 +53,27 @@ def test_proportional():
     allocated = allocation.compute_allocation(a.axialtree, 12)
     assert a.get_allocated() == [2, 2, 2 ,2 ,2 , 0]
 
+def test_proportional2():
+    allocation = Allocation(model='proportional_test_without_min', dt=1)
+    a = mylstring()
+    res = a.get_demand()
+    assert sum(res) == 12
+    #not enough resource (6) so all 6 apices should obtain 1
+    allocated = allocation.compute_allocation(a.axialtree, 6.)
+
+
+def test_wrong_model():
+    allocation = Allocation(model='dummy', dt=1)
+    a = mylstring()
+    res = a.get_demand()
+    assert sum(res) == 12
+    #not enough resource (6) so all 6 apices should obtain 1
+    try:
+        allocated = allocation.compute_allocation(a.axialtree, 6.)
+        assert False
+    except:
+        assert True
+
 
 def hierarchical(demands=[2,2,2,2,2,2]):
     allocation = Allocation(model='hierarchical', dt=1)
@@ -88,3 +109,15 @@ def test_hierarchical_perturbation(demands=[2,2,2,2,2,2]):
     print 'Individual allocation:', a.get_allocated()
 
 
+
+class test_allocation():
+
+    def __init__(self):
+        self.allocation = Allocation(model='hierarchical', dt=1, perturbation=0.1)
+        self.lstring = mylstring()
+
+    def test_attribute(self):
+        assert self.allocation.lstring == None
+
+    def test_compute_allocation(self):
+        self.allocation.compute_allocation(self.lstring.axialtree, 10.)
