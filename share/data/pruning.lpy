@@ -5,7 +5,7 @@ from math import acos, pi
 import copy
 import time
 from openalea.fractalysis.light.directLight import diffuseInterception
-from openalea.plantgl.all import Sphere, Viewer, Box, Frustum
+from openalea.plantgl.all import Sphere, Viewer, Box, Vector3
 
 from openalea.plantik.simulation.simulation import Simulation
 from openalea.plantik.tools.config import ReadConfigFile
@@ -58,6 +58,7 @@ Viewer.frameGL.setBgColor(int(bg[0]), int(bg[1]), int(bg[2]))
 Viewer.grids.setXYPlane(options.viewer.xygrid)
 Viewer.grids.setYZPlane(options.viewer.yzgrid)
 Viewer.grids.setXZPlane(options.viewer.xzgrid)
+Viewer.light.position = Vector3(0,0,100)
 
 # create calendar instance      
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
@@ -125,7 +126,7 @@ def EndEach(lstring, scene):
     # update
     mtg = axialtree2mtg(lstring, scales, scene, parameters)
     plant.mtgtools.mtg = mtg
-    plant.update(simulation.time_elapsed.days, lstring)
+    plant.update(simulation.time_elapsed.days, lstring, fast=True)
     #plant.mtg = 
 
     # compute allocated resources according to the individual demand (proportional model)
@@ -190,7 +191,8 @@ def EndEach(lstring, scene):
 
         radius = {}
         temp = {'I':'Internode', 'L':'Leaf'}
-        for vid in traversal.pre_order(plant.mtg, 4):
+        #use post_order since computation should go from leaves to internodes.
+        for vid in traversal.post_order(plant.mtg, 4):
            radius[vid] = pow(
                            sum(
                              [ (plant.mtg.property(temp[plant.mtg.class_name(c)])[c].radius)**coeff  
@@ -199,9 +201,10 @@ def EndEach(lstring, scene):
                                ),
                                1./coeff)
         for vid, s in radius.iteritems():
-           if plant.mtg.class_name(vid) in ['I']:
+           if vid in plant.mtgtools.ids['I']:
               # max to prevent radius to shrink
-              plant.mtg.property('Internode')[vid].target_radius = max(radius[vid], plant.mtg.property('Internode')[vid].target_radius)
+              plant.mtg.property('Internode')[vid].target_radius = max(radius[vid], 
+                  plant.mtg.property('Internode')[vid].target_radius)
     elif options.pipe.model==None:
       pass
     else:
@@ -210,27 +213,27 @@ def EndEach(lstring, scene):
     # light interception ?
     if options.misc.light_interception:
       Viewer.redrawPolicy = False
+      #scene = Viewer.getCurrentScene()
       Viewer.display(scene)
       pos,h,up = Viewer.camera.getPosition()
       res = diffuseInterception(scene)
       leaves = {}
+      #assert len(scene) == len(lstring)-1, "%s %s" %( len(lstring), len(scene))
       for k,v in res.items():
          try:
            if lstring[k].name == 'L':
              lstring[k][0].lg = v
          except:
+            try:
+              if lstring[k].name in ['A', 'I']:
+                print 'A or I element'
+            except:
+               pass
             pass
       Viewer.redrawPolicy = False
       Viewer.camera.lookAt(pos,pos+h)      
       Viewer.redrawPolicy = True
 
-    # required for the homomorphism to nicely represent the first
-    # element as a cylinder with same base and top radius until a
-    # better solution is found
-    #try:
-    #   lstring[0][0].radius = lstring[1][0].radius
-    #except:
-    #   pass
     
     # anothor homomorphism trick: the leaf must be shifted to fit the
     # internode radius on which they are put. Similarly for the apices
@@ -241,13 +244,10 @@ def EndEach(lstring, scene):
             id = father(plant.mtg, ids)
             plant.mtg.property('Leaf')[ids].father_radius = plant.mtg.property('Internode')[id].radius
         for ids in plant.mtgtools.ids['A']:
-            #try:
             id = father(plant.mtg, ids)
             if id:
               plant.mtg.property('Apex')[ids].father_radius = plant.mtg.property('Internode')[id].radius
-            #except:
-            #  pass
-
+      
     useGroup(1)
 
 
@@ -263,13 +263,14 @@ def End(lstring, scene):
     #,'Apex','Internode', 'Leaf'])
     #print plant.lstring
 
-    scene.save('/tmp/test.bgeom')
-    scene.save('/tmp/test.geom')
+    #scene.save('/tmp/test.bgeom')
+    #scene.save('/tmp/test.geom')
     
     if options.general.fast == True:
       # not need to save anything
       return 
     plant.mtg.properties()['geometry']={}
+    del plant.mtgtools.DB
     import pickle
     pickle.dump(plant, open("pruning_" + options.general.tag +'_data.dat','w'))
     import openalea.plantik.tools.post_analysis
@@ -530,10 +531,14 @@ I(i):
 L(c):
     #leaf
     if options.misc.light_interception is True:
-      norm = 0.08
-      #print (c.size/c.leaf_max_area),  c.lg/norm ,  (0.0030/c.leaf_max_area)
+
+
+      norm = 3.5
+      if c.lg > norm:
+        print 'NORM mst be change to %s' % c.lg
+        print (c.area/Leaf.area_max),  c.lg/norm
       
-      color = int(53. - (53-36.) * (c.area/c.area_max) * c.lg/norm * (0.0030/c.area_max))
+      color = int(53. - (53-36.) * c.lg/norm)
       #print 'llllgggg', c.lg, c.size, c.size/c.leaf_max_area, color
       if color<=35 : print 'color', color
       if color>=54 : print 'color', color
@@ -584,8 +589,8 @@ def __initialiseContext__(context):
 	from openalea.plantgl.scenegraph import Material, Texture2D, ImageTexture,Color3
 	context.turtle.setMaterial(5,Material(name='Default',ambient=Color3(3,5,2),diffuse=32,))
 	context.turtle.setMaterial(6,Material(name='Default',ambient=Color3(0,0,0),))
-	context.turtle.setMaterial(7,Texture2D(name='APPID_3_195328248',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/appletree_texture_sym.jpg'''),))
-	context.turtle.setMaterial(8,Texture2D(name='APPID_5_196508344',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/apple_leaf_texture.jpg'''),))
+	context.turtle.setMaterial(7,Texture2D(name='APPID_3_197777408',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/appletree_texture_sym.jpg'''),))
+	context.turtle.setMaterial(8,Texture2D(name='APPID_5_174872784',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/apple_leaf_texture.jpg'''),))
 	context.turtle.setMaterial(11,Material(name='Default',ambient=Color3(0,0,134),diffuse=0.402985,specular=Color3(67,67,67),emission=Color3(29,29,29),))
 	context.turtle.setMaterial(12,Material(name='APPID_6_201601160',ambient=Color3(31,1,119),diffuse=0.431929,specular=Color3(63,63,63),emission=Color3(25,25,25),))
 	context.turtle.setMaterial(13,Material(name='APPID_11_201482848',ambient=Color3(62,2,104),diffuse=0.460873,specular=Color3(60,60,60),emission=Color3(21,21,21),))

@@ -347,6 +347,8 @@ class MTGTools(object):
         if you do not like SQL request, you may try the :meth:`select` method.
         The previous command would be equivalent to 
 
+
+
         ::
 
             mtgtools.select(select="*")
@@ -357,14 +359,15 @@ class MTGTools(object):
         self.dbfile = tempfile.mkstemp('dbMTG')
         conn = sqlite3.connect(self.dbfile[1])
         c = conn.cursor()
-        c.execute("create table mtg (scale int, ord int, label text, rank int, id integer)")
+        c.execute("create table mtg (scale int, ord int, label text, rank int, id integer, complex integer)")
         vertices = self.mtg.vertices()
         for id in vertices:
             scale = self.mtg.scale(id)
             label = self.mtg.label(id)
             order = self.mtg.order(id)
+            complex = self.mtg.complex(id)
             rank = getrank(self.mtg, id)
-            c.execute("insert into mtg values (?,?,?,?,?)", (scale, order, label, rank, id))
+            c.execute("insert into mtg values (?,?,?,?,?,?)", (scale, order, label, rank, id, complex))
         conn.commit()
         c.close()
 
@@ -375,6 +378,7 @@ class MTGTools(object):
         :param label: select node that match this label
         :param order: select node that match this order
         :param scale: select node that match this scale
+        :param complex: select node that match this complex
         :param rank: select node that match this rank
 
         ::
@@ -391,13 +395,14 @@ class MTGTools(object):
         return [getattr(self.mtg.property(self.parameters[label][0])[id], attribute) for id in self.select(**kargs)]
 
 
-    def select(self, select="id", order=None, label=None, scale=None, rank=None):
+    def select(self, select="id", order=None, label=None, scale=None, rank=None, complex=None):
         """Return ids in the DB that fit the user parameter inputs.
 
         :param label: select node that match this label
         :param order: select node that match this order
         :param scale: select node that match this scale
         :param rank: select node that match this rank
+        :param complex: select node that match this complex
 
         ::
 
@@ -410,7 +415,7 @@ class MTGTools(object):
 
         .. seealso:: :meth:`select_attribute`, :meth:`requestDB`
         """
-        assert select in ["id", "ord", "scale", "label", "rank"]
+        assert select in ["id", "ord", "scale", "label", "rank", "complex"]
         request = "select %s from mtg " % select
         where = False
 
@@ -432,6 +437,13 @@ class MTGTools(object):
             else:
                 request += " and "
             request += "scale == '%s' " % scale
+        if complex !=None:
+            if where == False: 
+                request += " where ";  
+                where = True
+            else:
+                request += " and "
+            request += "complex == '%s' " % complex
         if rank !=None:
             if where == False: 
                 request += " where ";  
@@ -501,12 +513,13 @@ class MTGTools(object):
         .. seealso:: :class:`~openalea.plantik.biotik.context.Context`
 
         .. todo:: to be optimised.
+
+        .. note:: does not use DB facilities
         """
         from openalea.mtg.algo import rank, order, height
 
         g = self.mtg
 
-        # first the branches
         for id in g.vertices():
             node = g.node(id)
             if node.scale()>=2:
@@ -517,7 +530,7 @@ class MTGTools(object):
                         obj.context.order = order(g, id)
                         obj.context.height = height(g, id)
                 except:
-                    print g[id]
+                    print "set_order_path_rank failed."
 
 
     def get_branch_radius_on_trunk(self):

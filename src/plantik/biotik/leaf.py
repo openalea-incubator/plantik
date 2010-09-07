@@ -61,6 +61,13 @@ class Leaf(ComponentInterface):
     * optimal resource produced by a leaf per day is denoted :math:`r_0`
     * efficiency of a leaf is denoted :math:`\mathcal{E}`. see :meth:`leaf_efficiency()`
 
+    =================   ==================  ===================
+    =================   ==================  ===================
+    petiole_radius      0.0005              meters
+    area min            1. 10e-4            meters square
+    area max            30. 10e-4           meters square
+    mass per area       200 g/m^2           g per meters square
+    =================   ==================  ===================
     """
     petiole_radius = 0.0005
     area_min = 1. * 0.01 * 0.01     # 1 cm^2 changed into  m^2

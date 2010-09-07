@@ -67,6 +67,7 @@ class Apex(ComponentInterface):
             * :attr:`interruption`: time step during which an apex is not growing (default is 0.)
             * :attr:`growing` (default is False)
             * :attr:`father_radius`  (default is 0.)
+            * :attr:`lg`: used to store light interception
             * :attr:`internodes_created`  keep track of the number of internodes created by this
                 apex (default is 0.).
 
@@ -112,6 +113,7 @@ class Apex(ComponentInterface):
         self.growing = False
         self.internodes_created = 0.        # count number of internodes created by this apex
 
+        self.lg = 0.
 
     def _getHeight(self):
         return self._height

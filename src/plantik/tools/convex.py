@@ -109,6 +109,11 @@ def cvxHull( shape_list_or_scene , color=Green):
         scene += hull
         Viewer.display(hull)
 
+    .. figure:: convex.png
+        :width: 50%
+
+        Example of convex hull enveloppe (of the leaves) added on top of a tree generated with pruning.lpy
+
     """
 
     group = pgl.Group( [ sh.geometry for sh in shape_list_or_scene ] )
@@ -117,10 +122,15 @@ def cvxHull( shape_list_or_scene , color=Green):
     return hull
 
 
-def totalSurface(sc):
-    """somme surface groupe de shape"""
+def totalSurface(scene):
+    """Returns the total surface of the shape in a scene
+
+    :param Scene scene: a PGL scene with shapes
+    :return: the total surface area 
+
+    .. todo:: which units ? """
     sum = 0
-    for i in sc:
+    for i in scene:
         sum += pgl.surface(i.geometry)
     return sum
 

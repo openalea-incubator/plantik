@@ -346,10 +346,10 @@ class Plant(object):
             plotting for instance.!!
 
         """
-        import inspect
-        if inspect.stack()[1][3] != 'update':
-            import warnings
-            warnings.warn('You should not call Plant.update_counter directly but via the update() method. See docstring.')
+        #import inspect
+        #if inspect.stack()[1][3] != 'update':
+        #    import warnings
+        #    warnings.warn('You should not call Plant.update_counter directly but via the update() method. See docstring.')
         self.counter.apices.append(lstring.count('A'))
         self.counter.internodes.append(lstring.count('I'))
         self.counter.leaves.append(lstring.count('L'))
@@ -370,11 +370,12 @@ class Plant(object):
         self.DARC.C.append(C)
 
 
-    def update(self, time_elapsed, lstring):
+    def update(self, time_elapsed, lstring, fast=True):
         """Main core of the plant modelling to cionpute the DARC values at each step 
 
         plus the pipe model cost
 
+        :param bool fast: if True, branch_update and growth_update are not called (save about 20% of CPU).
 
         calls :meth:`update_DARC` and :meth:`update_counter` methods
 
@@ -451,8 +452,8 @@ class Plant(object):
 
         self._time.append(time_elapsed)
         self.update_counter(lstring)
-        self.branch_update()
-        self.growth_unit_update()
+        self.branch_update(fast=fast)
+        self.growth_unit_update(fast=fast)
 
         if self.D < 0. and self.D>-1e-15: self.D=0
         if self.A < 0. and self.A>-1e-15: self.A=0
@@ -461,7 +462,7 @@ class Plant(object):
         if self.D<0 or self.A<0 or self.R<0 or self.C<0:
             raise ValueError("D (%s), A  (%s), R (%s) and C (%s) cannot be negative!" % (self.D, self.A, self.R, self.C))
 
-    def growth_unit_update(self):
+    def growth_unit_update(self, fast=True):
         """update growth unit  information.
 
         #. recompute the number of internode unit in a branch
@@ -469,22 +470,40 @@ class Plant(object):
         #. recompute the branch base radius (e.g., first internode radius)
 
         """
-        #from openalea.mtg.aml import Activate, Components, Class
-        #Activate(self.mtg)
-        gu_ids = [x for x in self.mtg.vertices() if self.mtg.class_name(x)=='U']
 
-        # save the number of internodes in each GU
+        if fast == True:
+            return 
+
+        gu_ids = self.mtgtools.ids['U']
+
+        """
+        self.mtgtools.createDB()
+        self.mtgtools.connectDB()
+        for gu_id in gu_ids:
+            counter = len(self.mtgtools.select(select="id", label='I', complex=gu_id))
+            self.mtg.property('GrowthUnit')[gu_id].internode_counter = counter
+
+            length = sum(self.mtgtools.select_attribute(attribute="length", select="id", label='I', complex=gu_id))
+            self.mtgtools.mtg.property('GrowthUnit')[gu_id].length = length
+
+            radius = self.mtgtools.select_attribute(attribute="radius", select="id", label='I', complex=gu_id)
+            if len(radius) != 0:
+                self.mtgtools.mtg.property('GrowthUnit')[gu_id].radius = max(radius)
+        self.mtgtools.closeDB() 
+        """
+ 
+        # save the number of internodes in each GU using standard mtg code.
         for vid in gu_ids:
            counter = len([id for id in list(self.mtg.components_at_scale(vid,4))
                           if self.mtg.class_name(id)=='I'])
            self.mtg.property('GrowthUnit')[vid].internode_counter = counter
-
+        
         # computes the length
         for vid in gu_ids:
             length = sum([ self.mtg.property('Internode')[id].length for id in list(self.mtg.components_at_scale(vid,4))
                           if self.mtg.class_name(id)=='I'])
             self.mtg.property('GrowthUnit')[vid].length = length
-
+        
         for vid in gu_ids:
             first_id = self.mtg.components_at_scale(vid, scale=4).next()
             if self.mtg.class_name(first_id) == 'I':
@@ -492,7 +511,7 @@ class Plant(object):
 
 
 
-    def branch_update(self):
+    def branch_update(self, fast=True):
         """update branch  information.
 
         #. recompute the number of growth unit in a branch
@@ -501,6 +520,9 @@ class Plant(object):
         #. recompute the branch base radius (e.g., first internode radius)
 
         """
+
+        if fast == True:
+            return
         from openalea.mtg.aml import Activate, Components, Class, VtxList
         Activate(self.mtg)
         try:

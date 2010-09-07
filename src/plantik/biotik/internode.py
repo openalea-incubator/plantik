@@ -158,7 +158,7 @@ class Internode(ComponentInterface):
         """)
 
     def _getdVolume(self):
-        return pi * self._target_radius * self._target_radius * self.length - self.volume
+        return pi * (self._target_radius * self._target_radius - self.radius * self.radius) * self.length
     dvolume = property(_getdVolume, None, None, doc="""
         returns dv  
 
