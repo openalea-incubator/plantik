@@ -74,6 +74,10 @@ module I(Internode) : scale=4
 module L(Leaf): scale=4
 
 global time1
+global norm
+
+#used by the light interception homomorphism
+norm = 8.44
 
 def Start():
   global options
@@ -98,7 +102,7 @@ def Start():
 def StartEach():
   pass
 
-def EndEach(lstring, scene):
+def EndEach(lstring,scene):
   global allocation
   dt = simulation.calendar.dt.days
   if len(lstring)>=options.general.max_elements:
@@ -120,7 +124,7 @@ def EndEach(lstring, scene):
     # Save MTG
     
     # update
-    mtg = axialtree2mtg(lstring, scales, scene, parameters)
+    mtg = axialtree2mtg(lstring, scales, None, parameters)
     plant.mtgtools.mtg = mtg
     plant.update(simulation.time_elapsed.days, lstring, fast=True)
     #plant.mtg = 
@@ -206,34 +210,20 @@ def EndEach(lstring, scene):
     else:
       pass
       print 'pipe model %s provided not correct (try strand)' % options.pipe.model
-    # light interception ?
-    if options.misc.light_interception:
-      Viewer.redrawPolicy = False
-      #scene = Viewer.getCurrentScene()
-      Viewer.display(scene)
-      pos,h,up = Viewer.camera.getPosition()
-      #Viewer.light.position = Vector3(0,0, 100)
 
-      print len(scene)
-      print len(lstring)
-      res = diffuseInterception(scene)
+    # -------------------- light interception ---------------------------------------------
+    if options.misc.light_interception:
+      #!! first you need to display the scene
+      Viewer.display(scene)
+      res = diffuseInterception(scene, jump=1)
       leaves = {}
-      #assert len(scene) == len(lstring)-1, "%s %s" %( len(lstring), len(scene))
-      for k,v in res.items():
-         print k,v
-         try:
+      for k,v in res.iteritems():
            if lstring[k].name == 'L':
-             lstring[k][0].lg = v
-         except:
-            try:
-              if lstring[k].name in ['A', 'I']:
-                print 'A or I element'
-            except:
-               pass
-            pass
-      Viewer.redrawPolicy = False
-      Viewer.camera.lookAt(pos,pos+h)      
-      Viewer.redrawPolicy = True
+               lstring[k][0].lg = v
+           elif lstring[k].name == 'A':
+               lstring[k][0].lg = v
+           
+      
 
     
     # anothor homomorphism trick: the leaf must be shifted to fit the
@@ -298,6 +288,7 @@ derivation length: int(options.general.max_step)
 
 ignore: +/
 production:
+
 
 group 1: # vegetative growth (spring/summer)
 
@@ -531,11 +522,10 @@ I(i):
 
 L(c):
     #leaf
+    global norm
     if options.misc.light_interception is True:
-
-
-      norm = 3.5
       if c.lg > norm:
+        norm = c.lg
         print 'NORM mst be change to %s' % c.lg
         print (c.area/Leaf.area_max),  c.lg/norm
       
@@ -597,13 +587,14 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_217480056 = pgl.ImageTexture("PGL_217480056" , "./appletree_texture_sym.jpg" , )
-	PGL_217480056.name = "PGL_217480056"
-	Color_7 = pgl.Texture2D(image = PGL_217480056 , )
+	PGL_213864912 = pgl.ImageTexture("PGL_213864912" , "./appletree_texture_sym.jpg" , )
+	PGL_213864912.name = "PGL_213864912"
+	Color_7 = pgl.Texture2D(image = PGL_213864912 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_217979312 = pgl.ImageTexture("PGL_217979312" , "./apple_leaf_texture.jpg" , )
-	Color_8 = pgl.Texture2D(image = PGL_217979312 , )
+	PGL_210959080 = pgl.ImageTexture("PGL_210959080" , "./apple_leaf_texture.jpg" , )
+	PGL_210959080.name = "PGL_210959080"
+	Color_8 = pgl.Texture2D(image = PGL_210959080 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
