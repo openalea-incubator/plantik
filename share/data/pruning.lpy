@@ -1,7 +1,7 @@
 __revision__ = " $Id$ "
 import random
 import os
-from math import acos, pi
+from math import pi
 import copy
 import time
 from openalea.fractalysis.light.directLight import diffuseInterception
@@ -35,22 +35,18 @@ from openalea.stocatree.tools.surface import leafSurface
 from openalea.mtg.io import axialtree2mtg, mtg2axialtree
 import openalea.mtg.traversal as traversal
 
-from math import sqrt
-from heapq import heappush, heappop
-import datetime
 
-
-
-counter = 0
 RATIO = 50.
 
-stride_number = 10
-leaf_surface = leafSurface(stride_number, stride_number)
 
 colors = Colors()
 
 from openalea.plantik import get_shared_data
 options = ReadConfigFile(get_shared_data('pruning.ini'))
+
+stride_nb = options.geometry.leaf_stride_number
+leaf_surface = leafSurface(int(stride_nb), int(stride_nb))
+
 
 #set bg color
 bg = tuple(options.viewer.background.split(','))
@@ -58,14 +54,14 @@ Viewer.frameGL.setBgColor(int(bg[0]), int(bg[1]), int(bg[2]))
 Viewer.grids.setXYPlane(options.viewer.xygrid)
 Viewer.grids.setYZPlane(options.viewer.yzgrid)
 Viewer.grids.setXZPlane(options.viewer.xzgrid)
-Viewer.light.position = Vector3(0,0,100)
+Viewer.light.position = Vector3(0,0, -100)
 
 # create calendar instance      
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
 
 RESERVE = 0.
 plant = Plant(options.general.time_step, options=options, revision=__revision__,  
-                pipe_fraction=1, tag=options.general.tag)
+                pipe_fraction=options.pipe.fraction, tag=options.general.tag)
 
 scales = {'A':4,'I':4,'L':4, 'P':1, 'B':2, 'U':3}
 parameters = {'A': ['Apex'], 'I': ['Internode'],  'L': ['Leaf'],'P':['Plant'], 'U':['GrowthUnit'], 'B':['Branch']}
@@ -110,7 +106,7 @@ def EndEach(lstring, scene):
     Stop()
     End(lstring, scene)
 
-  if options.general.verbose:
+  if options.general.verbose and options.general.fast!=True:
     print simulation.date, getIterationNb()
     
 
@@ -216,10 +212,15 @@ def EndEach(lstring, scene):
       #scene = Viewer.getCurrentScene()
       Viewer.display(scene)
       pos,h,up = Viewer.camera.getPosition()
+      #Viewer.light.position = Vector3(0,0, 100)
+
+      print len(scene)
+      print len(lstring)
       res = diffuseInterception(scene)
       leaves = {}
       #assert len(scene) == len(lstring)-1, "%s %s" %( len(lstring), len(scene))
       for k,v in res.items():
+         print k,v
          try:
            if lstring[k].name == 'L':
              lstring[k][0].lg = v
@@ -238,15 +239,15 @@ def EndEach(lstring, scene):
     # anothor homomorphism trick: the leaf must be shifted to fit the
     # internode radius on which they are put. Similarly for the apices
     #account for 5% of CPU
-    if options.geometry.realistic_petiole == True:
-        from openalea.mtg.algo import father
-        for ids in plant.mtgtools.ids['L']:
-            id = father(plant.mtg, ids)
-            plant.mtg.property('Leaf')[ids].father_radius = plant.mtg.property('Internode')[id].radius
-        for ids in plant.mtgtools.ids['A']:
-            id = father(plant.mtg, ids)
-            if id:
-              plant.mtg.property('Apex')[ids].father_radius = plant.mtg.property('Internode')[id].radius
+    
+    from openalea.mtg.algo import father
+    for ids in plant.mtgtools.ids['L']:
+        id = father(plant.mtg, ids)
+        plant.mtg.property('Leaf')[ids].father_radius = plant.mtg.property('Internode')[id].radius
+    for ids in plant.mtgtools.ids['A']:
+        id = father(plant.mtg, ids)
+        if id:
+            plant.mtg.property('Apex')[ids].father_radius = plant.mtg.property('Internode')[id].radius
       
     useGroup(1)
 
@@ -586,38 +587,180 @@ endlsystem
 __lpy_code_version__ = 1.1
 
 def __initialiseContext__(context):
-	from openalea.plantgl.scenegraph import Material, Texture2D, ImageTexture,Color3
-	context.turtle.setMaterial(5,Material(name='Default',ambient=Color3(3,5,2),diffuse=32,))
-	context.turtle.setMaterial(6,Material(name='Default',ambient=Color3(0,0,0),))
-	context.turtle.setMaterial(7,Texture2D(name='APPID_3_197777408',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/appletree_texture_sym.jpg'''),))
-	context.turtle.setMaterial(8,Texture2D(name='APPID_5_174872784',image=ImageTexture(filename='''/home/cokelaer/Work/virtualplants/trunk/vplants/plantik/share/data/apple_leaf_texture.jpg'''),))
-	context.turtle.setMaterial(11,Material(name='Default',ambient=Color3(0,0,134),diffuse=0.402985,specular=Color3(67,67,67),emission=Color3(29,29,29),))
-	context.turtle.setMaterial(12,Material(name='APPID_6_201601160',ambient=Color3(31,1,119),diffuse=0.431929,specular=Color3(63,63,63),emission=Color3(25,25,25),))
-	context.turtle.setMaterial(13,Material(name='APPID_11_201482848',ambient=Color3(62,2,104),diffuse=0.460873,specular=Color3(60,60,60),emission=Color3(21,21,21),))
-	context.turtle.setMaterial(14,Material(name='APPID_16_193040056',ambient=Color3(93,3,89),diffuse=0.489817,specular=Color3(56,56,56),emission=Color3(18,18,18),))
-	context.turtle.setMaterial(15,Material(name='APPID_21_201559576',ambient=Color3(124,5,74),diffuse=0.518762,specular=Color3(53,53,53),emission=Color3(14,14,14),))
-	context.turtle.setMaterial(16,Material(name='APPID_26_179610280',ambient=Color3(155,6,59),diffuse=0.547706,specular=Color3(50,50,50),emission=Color3(10,10,10),))
-	context.turtle.setMaterial(17,Material(name='APPID_31_197890624',ambient=Color3(186,7,44),diffuse=0.57665,specular=Color3(46,46,46),emission=Color3(7,7,7),))
-	context.turtle.setMaterial(18,Material(name='APPID_36_197919128',ambient=Color3(217,8,29),diffuse=0.605594,specular=Color3(43,43,43),emission=Color3(3,3,3),))
-	context.turtle.setMaterial(19,Material(name='Default',ambient=Color3(249,10,14),diffuse=0.634538,))
-	context.turtle.setMaterial(20,Material(name='Default',ambient=Color3(206,1,5),diffuse=0.776699,))
-	context.turtle.setMaterial(36,Material(name='Default',ambient=Color3(0,218,32),diffuse=0.733945,))
-	context.turtle.setMaterial(37,Material(name='APPID_3_205259680',ambient=Color3(15,206,30),diffuse=0.72745,))
-	context.turtle.setMaterial(38,Material(name='APPID_3_183101784',ambient=Color3(30,195,29),diffuse=0.720955,))
-	context.turtle.setMaterial(39,Material(name='APPID_3_182883320',ambient=Color3(44,183,27),diffuse=0.71446,))
-	context.turtle.setMaterial(40,Material(name='APPID_3_244823440',ambient=Color3(60,172,26),diffuse=0.707965,))
-	context.turtle.setMaterial(41,Material(name='APPID_3_185117336',ambient=Color3(75,160,24),diffuse=0.70147,))
-	context.turtle.setMaterial(42,Material(name='APPID_3_185117440',ambient=Color3(90,149,23),diffuse=0.694975,))
-	context.turtle.setMaterial(43,Material(name='APPID_3_217219296',ambient=Color3(105,137,21),diffuse=0.68848,))
-	context.turtle.setMaterial(44,Material(name='APPID_3_185117648',ambient=Color3(120,126,20),diffuse=0.681985,))
-	context.turtle.setMaterial(45,Material(name='APPID_3_185104032',ambient=Color3(135,114,18),diffuse=0.675489,))
-	context.turtle.setMaterial(46,Material(name='APPID_3_185104136',ambient=Color3(150,103,17),diffuse=0.668994,))
-	context.turtle.setMaterial(47,Material(name='APPID_3_185104240',ambient=Color3(165,91,15),diffuse=0.662499,))
-	context.turtle.setMaterial(48,Material(name='APPID_3_185104344',ambient=Color3(180,80,14),diffuse=0.656004,))
-	context.turtle.setMaterial(49,Material(name='APPID_3_185104448',ambient=Color3(195,68,12),diffuse=0.649509,))
-	context.turtle.setMaterial(50,Material(name='APPID_3_185104552',ambient=Color3(210,57,11),diffuse=0.643014,))
-	context.turtle.setMaterial(51,Material(name='APPID_3_185137960',ambient=Color3(225,45,9),diffuse=0.636519,))
-	context.turtle.setMaterial(52,Material(name='APPID_9_185138064',ambient=Color3(240,34,8),diffuse=0.630024,))
-	context.turtle.setMaterial(53,Material(name='Default',ambient=Color3(255,23,7),diffuse=0.623529,))
+	import openalea.plantgl.all as pgl
+	Color_5 = pgl.Material("Color_5" , 		ambient = (3,5,2) , 
+		diffuse = 32 , 
+)
+	Color_5.name = "Color_5"
+	context.turtle.setMaterial(5,Color_5)
+	Color_6 = pgl.Material("Color_6" , 		ambient = (0,0,0) , 
+)
+	Color_6.name = "Color_6"
+	context.turtle.setMaterial(6,Color_6)
+	PGL_217480056 = pgl.ImageTexture("PGL_217480056" , "./appletree_texture_sym.jpg" , )
+	PGL_217480056.name = "PGL_217480056"
+	Color_7 = pgl.Texture2D(image = PGL_217480056 , )
+	Color_7.name = "Color_7"
+	context.turtle.setMaterial(7,Color_7)
+	PGL_217979312 = pgl.ImageTexture("PGL_217979312" , "./apple_leaf_texture.jpg" , )
+	Color_8 = pgl.Texture2D(image = PGL_217979312 , )
+	Color_8.name = "Color_8"
+	context.turtle.setMaterial(8,Color_8)
+	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
+		diffuse = 0.402985 , 
+		specular = (67,67,67) , 
+		emission = (29,29,29) , 
+)
+	Color_11.name = "Color_11"
+	context.turtle.setMaterial(11,Color_11)
+	Color_12 = pgl.Material("Color_12" , 		ambient = (31,1,119) , 
+		diffuse = 0.431929 , 
+		specular = (63,63,63) , 
+		emission = (25,25,25) , 
+)
+	Color_12.name = "Color_12"
+	context.turtle.setMaterial(12,Color_12)
+	Color_13 = pgl.Material("Color_13" , 		ambient = (62,2,104) , 
+		diffuse = 0.460873 , 
+		specular = (60,60,60) , 
+		emission = (21,21,21) , 
+)
+	Color_13.name = "Color_13"
+	context.turtle.setMaterial(13,Color_13)
+	Color_14 = pgl.Material("Color_14" , 		ambient = (93,3,89) , 
+		diffuse = 0.489817 , 
+		specular = (56,56,56) , 
+		emission = (18,18,18) , 
+)
+	Color_14.name = "Color_14"
+	context.turtle.setMaterial(14,Color_14)
+	Color_15 = pgl.Material("Color_15" , 		ambient = (124,5,74) , 
+		diffuse = 0.518762 , 
+		specular = (53,53,53) , 
+		emission = (14,14,14) , 
+)
+	Color_15.name = "Color_15"
+	context.turtle.setMaterial(15,Color_15)
+	Color_16 = pgl.Material("Color_16" , 		ambient = (155,6,59) , 
+		diffuse = 0.547706 , 
+		specular = (50,50,50) , 
+		emission = (10,10,10) , 
+)
+	Color_16.name = "Color_16"
+	context.turtle.setMaterial(16,Color_16)
+	Color_17 = pgl.Material("Color_17" , 		ambient = (186,7,44) , 
+		diffuse = 0.57665 , 
+		specular = (46,46,46) , 
+		emission = (7,7,7) , 
+)
+	Color_17.name = "Color_17"
+	context.turtle.setMaterial(17,Color_17)
+	Color_18 = pgl.Material("Color_18" , 		ambient = (217,8,29) , 
+		diffuse = 0.605594 , 
+		specular = (43,43,43) , 
+		emission = (3,3,3) , 
+)
+	Color_18.name = "Color_18"
+	context.turtle.setMaterial(18,Color_18)
+	Color_19 = pgl.Material("Color_19" , 		ambient = (249,10,14) , 
+		diffuse = 0.634538 , 
+)
+	Color_19.name = "Color_19"
+	context.turtle.setMaterial(19,Color_19)
+	Color_20 = pgl.Material("Color_20" , 		ambient = (206,1,5) , 
+		diffuse = 0.776699 , 
+)
+	Color_20.name = "Color_20"
+	context.turtle.setMaterial(20,Color_20)
+	Color_36 = pgl.Material("Color_36" , 		ambient = (0,218,32) , 
+		diffuse = 0.733945 , 
+)
+	Color_36.name = "Color_36"
+	context.turtle.setMaterial(36,Color_36)
+	Color_37 = pgl.Material("Color_37" , 		ambient = (15,206,30) , 
+		diffuse = 0.72745 , 
+)
+	Color_37.name = "Color_37"
+	context.turtle.setMaterial(37,Color_37)
+	Color_38 = pgl.Material("Color_38" , 		ambient = (30,195,29) , 
+		diffuse = 0.720955 , 
+)
+	Color_38.name = "Color_38"
+	context.turtle.setMaterial(38,Color_38)
+	Color_39 = pgl.Material("Color_39" , 		ambient = (44,183,27) , 
+		diffuse = 0.71446 , 
+)
+	Color_39.name = "Color_39"
+	context.turtle.setMaterial(39,Color_39)
+	Color_40 = pgl.Material("Color_40" , 		ambient = (60,172,26) , 
+		diffuse = 0.707965 , 
+)
+	Color_40.name = "Color_40"
+	context.turtle.setMaterial(40,Color_40)
+	Color_41 = pgl.Material("Color_41" , 		ambient = (75,160,24) , 
+		diffuse = 0.70147 , 
+)
+	Color_41.name = "Color_41"
+	context.turtle.setMaterial(41,Color_41)
+	Color_42 = pgl.Material("Color_42" , 		ambient = (90,149,23) , 
+		diffuse = 0.694975 , 
+)
+	Color_42.name = "Color_42"
+	context.turtle.setMaterial(42,Color_42)
+	Color_43 = pgl.Material("Color_43" , 		ambient = (105,137,21) , 
+		diffuse = 0.68848 , 
+)
+	Color_43.name = "Color_43"
+	context.turtle.setMaterial(43,Color_43)
+	Color_44 = pgl.Material("Color_44" , 		ambient = (120,126,20) , 
+		diffuse = 0.681985 , 
+)
+	Color_44.name = "Color_44"
+	context.turtle.setMaterial(44,Color_44)
+	Color_45 = pgl.Material("Color_45" , 		ambient = (135,114,18) , 
+		diffuse = 0.675489 , 
+)
+	Color_45.name = "Color_45"
+	context.turtle.setMaterial(45,Color_45)
+	Color_46 = pgl.Material("Color_46" , 		ambient = (150,103,17) , 
+		diffuse = 0.668994 , 
+)
+	Color_46.name = "Color_46"
+	context.turtle.setMaterial(46,Color_46)
+	Color_47 = pgl.Material("Color_47" , 		ambient = (165,91,15) , 
+		diffuse = 0.662499 , 
+)
+	Color_47.name = "Color_47"
+	context.turtle.setMaterial(47,Color_47)
+	Color_48 = pgl.Material("Color_48" , 		ambient = (180,80,14) , 
+		diffuse = 0.656004 , 
+)
+	Color_48.name = "Color_48"
+	context.turtle.setMaterial(48,Color_48)
+	Color_49 = pgl.Material("Color_49" , 		ambient = (195,68,12) , 
+		diffuse = 0.649509 , 
+)
+	Color_49.name = "Color_49"
+	context.turtle.setMaterial(49,Color_49)
+	Color_50 = pgl.Material("Color_50" , 		ambient = (210,57,11) , 
+		diffuse = 0.643014 , 
+)
+	Color_50.name = "Color_50"
+	context.turtle.setMaterial(50,Color_50)
+	Color_51 = pgl.Material("Color_51" , 		ambient = (225,45,9) , 
+		diffuse = 0.636519 , 
+)
+	Color_51.name = "Color_51"
+	context.turtle.setMaterial(51,Color_51)
+	Color_52 = pgl.Material("Color_52" , 		ambient = (240,34,8) , 
+		diffuse = 0.630024 , 
+)
+	Color_52.name = "Color_52"
+	context.turtle.setMaterial(52,Color_52)
+	Color_53 = pgl.Material("Color_53" , 		ambient = (255,23,7) , 
+		diffuse = 0.623529 , 
+)
+	Color_53.name = "Color_53"
+	context.turtle.setMaterial(53,Color_53)
 	context.options.setSelection('Optimization',2)
 	context.options.setSelection('Selection Always Required',1)

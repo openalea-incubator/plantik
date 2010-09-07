@@ -1,3 +1,10 @@
+* 2010 sept 6th: version 0.2
+
+    * Major cleanup 
+	* Complete test (90% coverage)
+	* Most of functionalities are now documented
+	* pruning.lpy completed.
+
 
 * 2010 august 30th: refactoring 
     * add branch, growthunit modules to manipulate plant at different scales
@@ -5,6 +12,8 @@
       such as demand, resource, radius, length
     * complete component a base abstract class common to all biological component 
     * complete simular and calendar modules
+	* Add MTGTools to optimise and ease access to mtg data
+	* full cleanup
 
   documentation:
 
