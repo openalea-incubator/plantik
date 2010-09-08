@@ -126,7 +126,7 @@ def EndEach(lstring,scene):
     # update
     mtg = axialtree2mtg(lstring, scales, None, parameters)
     plant.mtgtools.mtg = mtg
-    plant.update(simulation.time_elapsed.days, lstring, fast=True)
+    plant.update(simulation.time_elapsed.days, lstring, fast=True, dvmin=0.0)
     #plant.mtg = 
 
     # compute allocated resources according to the individual demand (proportional model)
@@ -239,6 +239,13 @@ def EndEach(lstring,scene):
         if id:
             plant.mtg.property('Apex')[ids].father_radius = plant.mtg.property('Internode')[id].radius
       
+      
+      
+    if options.general.saveimage is True:
+        print 'saving pruning_%05d.png' % getIterationNb(), 'png'
+        Viewer.frameGL.saveImage('pruning_%05d.png' % getIterationNb(), 'png')
+
+
     useGroup(1)
 
 
@@ -261,7 +268,10 @@ def End(lstring, scene):
       # not need to save anything
       return 
     plant.mtg.properties()['geometry']={}
-    del plant.mtgtools.DB
+    try:
+        plant.mtgtools.DB = None
+    except:
+        pass
     import pickle
     pickle.dump(plant, open("pruning_" + options.general.tag +'_data.dat','w'))
     import openalea.plantik.tools.post_analysis
@@ -358,7 +368,8 @@ A(a):
       'length_max': length,
       'cambial_fraction':options.internode.cambial_fraction,
       'birthdate':simulation.calendar.date,
-      'store_data':options.internode.store_data
+      'store_data':options.internode.store_data,
+      'maturation': options.internode.maturation
       }
         
     apex_args = {
@@ -434,10 +445,17 @@ R(r):
   
 I(i):
   i.update(simulation.calendar.dt.days)
-  produce I(i)
+  if options.pruning.method == 'box':
+    produce ?P(0,0,0)I(i)
+  else:
+    produce I(i)
   
 L(l):
   l.update(simulation.calendar.dt.days)
+  #if l.age.days >150:
+  #  produce Cut()
+  #else: 
+  #  produce L(l)
   produce L(l)
 
 
@@ -452,11 +470,21 @@ B(b):
 # module to allow interactive pruning
 X:
   produce Cut()
+  
+  
+?P(x,y,z):
+  if options.pruning.method == 'box':
+    if z>options.pruning.max_z or z<options.pruning.min_z or \
+      abs(x)>options.pruning.max_x or abs(y)>options.pruning.max_y: 
+        produce Cut()
+    else: produce *
+
 endgroup
 
 
 
 homomorphism:
+
 
 A(a):
     if options.general.colorcode=='order':
@@ -492,13 +520,13 @@ I(i):
         colorcode = 1
   
     elif options.general.colorcode=='test':
-      if i.order==0:
+      if i.context.order==0:
         colorcode=11
-      elif i.order==1:
+      elif i.context.order==1:
         colorcode=13
-      elif i.order==2:
+      elif i.context.order==2:
         colorcode=15
-      elif i.order==3:
+      elif i.context.order==3:
         colorcode=17
       else:
         colorcode=17
@@ -507,7 +535,7 @@ I(i):
     else:
       raise ValueError('colorcode in config.ini must be in normal, order')
       
-      
+    
     #nproduce SetColor(colorcode) TextureScale(3.14*i.radius*RATIO*options.geometry.radius_scale,i.length*RATIO) TextureRotation(0, -137.5*(i.context.path+1),0)
     nproduce SetWidth(i.radius*RATIO*options.geometry.radius_scale)
     h = i.context.rank
@@ -516,7 +544,7 @@ I(i):
     #todo ideally the textture should be aligned maybe with TextureTranslation()
     if options.tropism.tropism:
       nproduce @Tp(0,0,-options.tropism.z_tropism) @Ts(options.tropism.elasticity)
-    nproduce +(1) F(i.length*RATIO, i.radius*RATIO*options.geometry.radius_scale) 
+    nproduce +(0) F(i.length*RATIO*1.3, i.radius*RATIO*options.geometry.radius_scale) 
     nproduce RollL(options.geometry.phyllotactic_angle)
 
 
@@ -540,14 +568,13 @@ L(c):
       color = 8
     if options.geometry.leaf_view == True:
       #produce SetColor(color) +(90)  ~l(0.8*c.size*10.*RATIO) +(-90) +(options.geometry.branching_angle)
-      if c.age.days>200:
+      if c.age.days>options.geometry.leaf_lifetime:
         pass
-        #produce Cut()
       else:
         #vertical -> theta=0;  horizontal theta=90
         theta = 90
         # apex and leaf at the same place use phi=0
-        phi = 0.
+        phi = 0
         from openalea.plantgl.all import Shape
         
         produce SetColor(color) +(theta)^(phi) SetWidth(options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*RATIO*options.geometry.radius_scale) F(options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
@@ -563,9 +590,17 @@ U(u):
     if options.geometry.growth_unit_view:
         nproduce SetColor(3)F(.5, u.radius*RATIO*options.geometry.radius_scale)
     
-#P(p):
-#nproduce  F(0.01,p.radius*RATIO*options.geometry.radius_scale)
-
+P(p):
+    if options.pruning.method == 'box':
+        from openalea.plantgl.all import Box
+        x = options.pruning.max_x * 1.2
+        y = options.pruning.max_y * 1.2
+        z = options.pruning.max_z * 1.2
+        nproduce [;(24) 
+        nproduce      [@M(0,y,z/2)@g(Box(x,0.1,z/2.))]  
+        nproduce      [@M(x,0,z/2.)@g(Box(0.1,y,z/2.))]
+        #nproduce      [@M(0,0,z)@g(Box(x,y,.1))]
+        produce      [@M(x,-15,5)]]
 
 #Wall:
 #    produce [;(6)[@M(-10,0,15)@g(Box(15,0.5,15))][@M(5,0,30)@g(Box(15,15,0.5))][@M(20,0,15)@g(Box(15,0.5,15))][@M(5,15,15)@g(Box(0.5,15,15))][@M(5,-15,5)]]
@@ -587,14 +622,14 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_213864912 = pgl.ImageTexture("PGL_213864912" , "./appletree_texture_sym.jpg" , )
-	PGL_213864912.name = "PGL_213864912"
-	Color_7 = pgl.Texture2D(image = PGL_213864912 , )
+	PGL_202967960 = pgl.ImageTexture("PGL_202967960" , "./appletree_texture_sym.jpg" , )
+	PGL_202967960.name = "PGL_202967960"
+	Color_7 = pgl.Texture2D(image = PGL_202967960 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_210959080 = pgl.ImageTexture("PGL_210959080" , "./apple_leaf_texture.jpg" , )
-	PGL_210959080.name = "PGL_210959080"
-	Color_8 = pgl.Texture2D(image = PGL_210959080 , )
+	PGL_206779336 = pgl.ImageTexture("PGL_206779336" , "./apple_leaf_texture.jpg" , )
+	PGL_206779336.name = "PGL_206779336"
+	Color_8 = pgl.Texture2D(image = PGL_206779336 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
@@ -663,6 +698,10 @@ def __initialiseContext__(context):
 )
 	Color_20.name = "Color_20"
 	context.turtle.setMaterial(20,Color_20)
+	Color_24 = pgl.Material("Color_24" , 		transparency = 0.82 , 
+)
+	Color_24.name = "Color_24"
+	context.turtle.setMaterial(24,Color_24)
 	Color_36 = pgl.Material("Color_36" , 		ambient = (0,218,32) , 
 		diffuse = 0.733945 , 
 )
