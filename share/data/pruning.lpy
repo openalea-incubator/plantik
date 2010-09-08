@@ -95,8 +95,8 @@ def Start():
                           perturbation=options.allocation.perturbation)
   time1 = time.time()
   from openalea.plantgl.all import Texture2D, ImageTexture
-  context().turtle.setMaterial(7,Texture2D(image=ImageTexture(filename=get_shared_data('appletree_texture_sym.jpg')),))
-  context().turtle.setMaterial(8,Texture2D(image=ImageTexture(filename=get_shared_data('apple_leaf_texture.jpg')),))
+  context().turtle.setMaterial(7,Texture2D(image=ImageTexture(filename=get_shared_data('wood_1yo_texture.png')),))
+  context().turtle.setMaterial(8,Texture2D(image=ImageTexture(filename=get_shared_data('apple_leaf_texture_4.png')),))
 
 
 def StartEach():
@@ -577,7 +577,7 @@ L(c):
         phi = 0
         from openalea.plantgl.all import Shape
         
-        produce SetColor(color) +(theta)^(phi) SetWidth(options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*RATIO*options.geometry.radius_scale) F(options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
+        produce  SetColor(2) +(theta)^(phi) SetWidth(options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*RATIO*options.geometry.radius_scale) F(options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) SetColor(color) TextureScale(1, 1)  PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
           #produce SetColor(color)+(60) RollToVert()      -(60) +(branching_angle)
 
 B(b):
@@ -622,14 +622,14 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_202967960 = pgl.ImageTexture("PGL_202967960" , "./appletree_texture_sym.jpg" , )
-	PGL_202967960.name = "PGL_202967960"
-	Color_7 = pgl.Texture2D(image = PGL_202967960 , )
+	PGL_219980024 = pgl.ImageTexture("PGL_219980024" , "./wood_1yo_texture.png" , )
+	PGL_219980024.name = "PGL_219980024"
+	Color_7 = pgl.Texture2D(image = PGL_219980024 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_206779336 = pgl.ImageTexture("PGL_206779336" , "./apple_leaf_texture.jpg" , )
-	PGL_206779336.name = "PGL_206779336"
-	Color_8 = pgl.Texture2D(image = PGL_206779336 , )
+	PGL_214728096 = pgl.ImageTexture("PGL_214728096" , "./apple_leaf_texture_4.png" , )
+	PGL_214728096.name = "PGL_214728096"
+	Color_8 = pgl.Texture2D(image = PGL_214728096 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
