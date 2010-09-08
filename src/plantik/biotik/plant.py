@@ -264,12 +264,12 @@ class Plant(object):
 
         pylab.plot(T, D/norm, '-ob',label="Total demand")
         pylab.hold(True)
-        pylab.plot(T, A/norm, '-.sr',label="Total allocation")
-        pylab.plot(T, R/norm, '-xg', label='Total resource')
-        pylab.plot(T, C/norm, '-.', label='Total cost')
-        pylab.plot(T, pipe/norm, '-og', label='pipe model cost')
+        pylab.plot(T, A/norm, '-.sr',label="Allocation cost")
+        pylab.plot(T, R/norm, '-k', linewidth=2, label='Total resource')
+        pylab.plot(T, C/norm, '-D',color='magenta', markerfacecolor=None, markersize=12, label='Total cost')
+        pylab.plot(T, pipe/norm, '-og', label='Pipe model cost')
         try:
-            pylab.plot(T, (C+A+pipe)/norm, '-', label='Total cost + allocation + pipe\_model cost')
+            pylab.plot(T, (C+A+pipe)/norm, '-square', markersize=15, label='Total cost + allocation + pipe\_model cost')
         except:
             pass
         pylab.xlabel('Time (days)')
@@ -370,7 +370,7 @@ class Plant(object):
         self.DARC.C.append(C)
 
 
-    def update(self, time_elapsed, lstring, fast=True):
+    def update(self, time_elapsed, lstring, fast=True, dvmin=0.1):
         """Main core of the plant modelling to cionpute the DARC values at each step 
 
         plus the pipe model cost
@@ -411,44 +411,47 @@ class Plant(object):
         self.R *= self.dt
         self.C *= self.dt
 
+        # does not cost anything to check that dV is positive
+        assert self.dV >=0
 
         self.update_DARC(self.D, self.R, self.C)
+
+
+        # First sink processus:living cost ----------------------------------------------
         # substract the living cost from the total resource.
         if self.C > self.R:
             self.R = 0.
         else:
             self.R -= self.C
 
-        # get fraction of resource allocated to pipe construction
-        if self.dV < 0.1:
-            self.dV = 0
-        if self.dV > 0:
-            # ratio of available resource
-            pipe_ratio = (self.R ) / self.dV
-        else:
-            pipe_ratio = 0.
-        self.variables.pipe_ratio.append(pipe_ratio)
+
+        # second sink is the pipe model ---------------------------------------------------
         self.variables.dV.append(self.dV)
 
+        # let us compute the amount of dv that will be indeed allocated. Given that we want to use
+        # at maximum the amount R*pipe_fraction.
+        dv_a = min(self.R * self.pipe_fraction, self.dV)
+        assert dv_a >= 0 and dv_a <= self.R * self.pipe_fraction and dv_a <= self.dV
 
-        if self.dV != 0:
-            if pipe_ratio > 1:
-                pipe_ratio = 1
+        # So, the pipe_ratio that is fulfilled 
+        if dv_a !=0:
+            pipe_ratio = dv_a / self.dV
+        else:
+            pipe_ratio = 0.
+        assert pipe_ratio >=0 and pipe_ratio <= 1.
 
+        self.DARC.pipe_cost.append(dv_a)
 
-        #print 'target pipe fraction=',self.pipe_fraction
-        # min to prevent dV*pipe_ratio/pipe_fraction to get all resource, although this shoudl not be possible
-        # since pipe_fraction<=1, pipe ratio <=1 ?
+        cost_per_dv = 1.
+        self.R -= dv_a * cost_per_dv
+        
+        self.variables.pipe_ratio.append(pipe_ratio)
 
-        pipe_cost = self.dV*pipe_ratio*self.pipe_fraction
-        self.DARC.pipe_cost.append(pipe_cost)
-        self.R -= min(self.R, pipe_cost)
         #print 'new R=', self.R
         for elt in lstring:
             if elt.name in ['I']:
-
-                #print elt[0]._target_radius, elt[0].radius,pipe_ratio
-                elt[0].radius += (elt[0]._target_radius - elt[0].radius) * pipe_ratio
+                # pipe_ratio**2 since v=2.pi r^2
+                elt[0].radius += (elt[0]._target_radius - elt[0].radius) * pipe_ratio**2.
 
         self._time.append(time_elapsed)
         self.update_counter(lstring)
@@ -477,6 +480,7 @@ class Plant(object):
         gu_ids = self.mtgtools.ids['U']
 
         """
+        #tool long with the DB because it is created at each time step....
         self.mtgtools.createDB()
         self.mtgtools.connectDB()
         for gu_id in gu_ids:
