@@ -568,6 +568,38 @@ class MTGTools(object):
         pylab.title('Branch radius histogram on the trunk')
         if show==True:pylab.show()
 
+
+    def get_branch_position(self):
+        g = self.mtg
+        ids = self.select(label='B', order=1)
+        positions = []
+        for id in ids:
+            try:
+                internode_id = g.components_at_scale(id, 4).next()
+                pos = g.property('Internode')[internode_id].context.height
+            except:
+                pos = 0
+            positions.append(pos)
+        assert len(positions) == len(ids)
+        return positions
+
+    def get_trunk_info(self):
+        """returns LMS info of branches on the trunk"""
+        return convert2LMS(self.get_branch_length_on_trunk())
+
+    def get_trunk_sequence(self):
+        """returns a trunk sequence of branch LMS info """
+        # This command gets the apices of order 1. If a branch of order 1 grew, 
+        # this gives the length of each branch in number of internodes.
+        #trunk_rank_apices_method = self.select(label='A', order=1,select='rank')
+        ranks = self.select(label='I', order=0,select='rank')
+        trunk = [0] * len(ranks)
+        branches_LMS = self.get_trunk_info()
+        branches_position = self.get_branch_position()
+        for LMS, pos in zip(branches_LMS, branches_position):
+            trunk[pos] = LMS
+        return trunk
+
 def branch_rank_on_trunk(g):
     return [g.property('Branch')[id].context.rank for id in g.components(1) if g.class_name(id) == 'B']
 
@@ -597,9 +629,9 @@ def convert2LMS(length):
     elif type(length) == list:
         res = []
         for x in length:
-            if length<0.05:
+            if x<0.05:
                 res.append(1)
-            elif length< 0.2:
+            elif x< 0.2:
                 res.append(2)
             else:
                 res.append(3)
