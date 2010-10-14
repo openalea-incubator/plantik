@@ -53,8 +53,8 @@ setup(
     packages= ['openalea', 'openalea.plantik', 'vplants.plantik'],
     package_dir= {'vplants.plantik': 'src/plantik', '':'src'},
     # Namespace packages creation by deploy
-    #namespace_packages = [namespace],
-    create_namespaces = True,
+    namespace_packages = ['openalea', 'vplants'],
+    create_namespaces = False,
     zip_safe= False,
 
     # Dependencies

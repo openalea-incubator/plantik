@@ -24,7 +24,7 @@
 import platform
 import glob
 import os
-
+import tempfile
 
 def create_movie(input_glob='*.png', output_filename='output', format='avi', width=800, height=600, fps=24, type='png'):
     """generate a movie in avi format from a list of PNG images using mencode
@@ -51,15 +51,18 @@ def create_movie(input_glob='*.png', output_filename='output', format='avi', wid
     files = glob.glob(input_glob)
     files.sort()
     if 'linux' in platform.platform().lower():
-        tempfilename = '/tmp/list.txt'
-        tempfile = open(tempfilename, 'w')
+        #tempfilename = '/tmp/list.txt'
+        #tempfile = open(tempfilename, 'w')
+        tmpfile = tempfile.NamedTemporaryFile()
         for file in files:
-            tempfile.write(file+'\n')
-        tempfile.close()
+            tmpfile.write(file+'\n')
+        #tempfile.close()
 
         size = '-mf w=%s:h=%s:fps=%s:type=%s' % (width, height, fps, type)
-        cmd = 'mencoder mf://@%s %s -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o %s' % (tempfilename, size, output_filename + '.' + format)
+        cmd = 'mencoder mf://@%s %s -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o %s' % (tmpfile.name, size, output_filename + '.' + format)
         status = os.system(cmd)
+        tmpfile.close()
+
         if status!=0:
             print '!! command failed. check that mencoder is installed of files exists. (%s)' % cmd
     else:
