@@ -266,7 +266,11 @@ class MTGTools(object):
             try:
                 self.createDB()
             except:
-                raise RunTimeError("DB could not be created. Try manually....")
+                print "DB could not be created. Try manually....trying again",
+                try:
+                    self.createDB()
+                except:
+                    print "...failed"
             else:
                 print "DB created succesfully. Connecting...",
                 conn = sqlite3.connect(self.dbfile[1])
@@ -576,7 +580,7 @@ class MTGTools(object):
         for id in ids:
             try:
                 internode_id = g.components_at_scale(id, 4).next()
-                pos = g.property('Internode')[internode_id].context.height
+                pos = g.property('Internode')[internode_id].context.height-1
             except:
                 pos = 0
             positions.append(pos)
@@ -593,11 +597,18 @@ class MTGTools(object):
         # this gives the length of each branch in number of internodes.
         #trunk_rank_apices_method = self.select(label='A', order=1,select='rank')
         ranks = self.select(label='I', order=0,select='rank')
+        if len(ranks)==0:
+            return []
         trunk = [0] * len(ranks)
         branches_LMS = self.get_trunk_info()
         branches_position = self.get_branch_position()
-        for LMS, pos in zip(branches_LMS, branches_position):
-            trunk[pos] = LMS
+        try:
+            for LMS, pos in zip(branches_LMS, branches_position):
+                trunk[pos-1] = LMS
+        except:
+            print len(ranks), len(branches_LMS)
+            print branches_LMS
+            print branches_position
         return trunk
 
 def branch_rank_on_trunk(g):
