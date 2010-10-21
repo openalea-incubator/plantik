@@ -1,6 +1,6 @@
 __revision__ = "$Id$"
 
-import simulation
+"""import simulation
 import plants
 import tools
 import biotik
@@ -9,7 +9,7 @@ from biotik import *
 from plants import *
 from tools import *
 from simulation import *
-
+"""
 
 
 def get_shared_data(file):

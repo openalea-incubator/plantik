@@ -473,7 +473,7 @@ class MTGTools(object):
         >>> res = mtgtools.getVolumeInternodes(order=1) #doctest: +SKIP
 
         """
-        from openalea.plantik import Internode
+        from openalea.plantik.biotik import Internode
         ids = self.select(order=order, label="I")
         return sum([self.mtg.property('Internode')[id].volume for id in ids ])/ Internode.volume_standard
 
