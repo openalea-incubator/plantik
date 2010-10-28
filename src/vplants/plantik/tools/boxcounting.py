@@ -24,7 +24,7 @@
 from openalea.fractalysis import engine
 import numpy
 from math import log
-from scipy import stats
+from scipy.stats import linregress
 
 
 def boxcounting(scene, maxd=10, show=False):
@@ -64,7 +64,7 @@ def boxcounting(scene, maxd=10, show=False):
     log_inv_delta = numpy.array([log(1./i) for i in delta])
     log_n_delta = numpy.log(n_delta)
 
-    slope , itcept , r , ttp , stderr = stats.linregress(log_inv_delta, log_n_delta)
+    slope , itcept , r , ttp , stderr = linregress(log_inv_delta, log_n_delta)
     import pylab
     pylab.figure(1)
     pylab.clf()
@@ -76,7 +76,7 @@ def boxcounting(scene, maxd=10, show=False):
     pylab.legend(loc='best')
     if show==True: pylab.show()
 
-    slope , itcept , r , ttp , stderr = stats.linregress(1./delta, n_delta)
+    slope , itcept , r , ttp , stderr =linregress(1./delta, n_delta)
     pylab.figure(2)
     pylab.clf()
     pylab.plot(1./delta, n_delta, 'rx', label='Measured data')
