@@ -69,7 +69,7 @@ setup(
 
     # Namespace packages creation by deploy
     #namespace_packages = [namespace],
-    #create_namespaces = True,
+    create_namespaces = True,
     zip_safe= False,
 
     # Dependencies
@@ -90,14 +90,14 @@ setup(
     # postinstall_scripts = ['',],
 
     # Declare scripts and wralea as entry_points (extensions) of your package 
-    entry_points = { 
-        'wralea' : ['plantik = vplants.plantik_wralea'],
-        #'console_scripts': [
-        #       'fake_script = openalea.fakepackage.amodule:console_script', ],
-        # 'gui_scripts': [
-        #      'fake_gui = openalea.fakepackage.amodule:gui_script',],
-        #	'wralea': wralea_entry_points
-        },
+    entry_points = {
+            "wralea": [ "plantik = vplants.plantik_wralea",
+                        "plantik.config = vplants.plantik_config_wralea",
+                        "plantik.test = vplants.plantik_test_wralea",
+            ]
+            },
+
+
     )
 
 

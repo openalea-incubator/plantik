@@ -15,3 +15,4 @@ plantik User Guide
 
     installation.rst
     manual.rst
+    visualea.rst

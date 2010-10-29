@@ -80,7 +80,6 @@ tools sub package
     :undoc-members:
     :inherited-members:
     :show-inheritance:
-    :synopsis: see config module
 
 :mod:`openalea.plantik.tools.colors` module
 --------------------------------------------------------------

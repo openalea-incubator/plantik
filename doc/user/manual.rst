@@ -98,9 +98,9 @@ This file should
     * easily editable
     * commented
 
-This can be done easily in python using the :mod:`ConfigParser` module. We provide a simple method called :class:`~openalea.plantik.tools.config.read_config_file` that simplify the usage of this module. 
+This can be done easily in python using the :mod:`ConfigParser` module. We provide a simple method called :class:`~openalea.plantik.tools.config.ReadConfigFile` based on the ConfigParser module, with the additional property that we can then access to the section and options more easily, as explained here below.
 
-The configuration file should be like the following one::
+An example of a standard configuration file is::
 
     # a section is define by  a label in square brackets, followed by its parameters (normal text not python)
     [Section1]
@@ -114,12 +114,34 @@ The configuration file should be like the following one::
     param5 = longer text can be split over several line like that with
         an indentation
 
-Let us suppose that this file is called `config.ini`. You can then manipulat it as follows
+Let us suppose that this file is called `config.ini`. Using the ConfigParser module, you should type::
 
-::
+    >>> import ConfigParser
+    >>> config = ConfigParser.ConfigParser()
+    >>> config.read('config.ini')
+    >>> assert config.get('general', 'verbose') in [True, False]
 
-    >>> params = read_config_file('config.ini', ['Section', 'Section2'])
-    >>> assert params['param1'] == 1
+With ReadConfigFile, the config object is transformed and works as follows::
+
+    >>> from vplants.plantik.tools.config import ReadConfigFile
+    >>> config = ReadConfigFile('config.ini')
+    >>> assert config.general.verbose in [True, False]
+
+Alternatively, if may already have the configuration file as a ConfigParser instance. If so, use the class ConfigParams, which is
+identical to ReadConfigFile but use the instance instead of the filename as input::
+
+    >>> import ConfigParser
+    >>> config = ConfigParser.ConfigParser()
+    >>> config.read('config.ini')
+    >>> from vplants.plantik.tools.config import ConfigParams
+    >>> config_params = ConfigParams(config)
+    >>>
+
+the original config instance is still accessible in `config.config`. You can also save the original file easily::
+
+    >>> config.save(filename)
+
+
 
 
 Create a new biological components
