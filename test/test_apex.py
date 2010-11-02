@@ -24,6 +24,7 @@ class testApex():
 
     def test_attributes_setter(self):
         self.apex.vigor = 1
+        self.apex.height = 0.0
 
     def test_update(self):
         self.apex.update(1)

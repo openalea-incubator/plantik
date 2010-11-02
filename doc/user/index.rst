@@ -1,7 +1,7 @@
 .. _plantik_user:
 
-plantik User Guide
-#######################################
+User Guide
+##########
 
 :Version: |version|
 :Release: |release|
@@ -15,4 +15,6 @@ plantik User Guide
 
     installation.rst
     manual.rst
-    visualea.rst
+
+
+

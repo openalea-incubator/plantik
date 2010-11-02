@@ -17,7 +17,11 @@ class test_simulation():
             assert False
         except:
             assert True
-
+        try:
+            sim2 = Simulation(starting_date=['2000'], dt=1)
+            assert False
+        except:
+            assert True
         assert sim.time_elapsed.days == 0
     
         #by default there is an event called 'starting_date' starting 1jan2000. 
@@ -27,6 +31,10 @@ class test_simulation():
         sim = Simulation(starting_date=2000, dt=5)
         sim.starting_date == datetime.datetime(2000, 1, 1)
         self.sim = sim
+
+        assert sim.ending_date == datetime.datetime(2010,1,1)
+
+        sim.dt = 2
 
     def test_events(self):
 

@@ -49,3 +49,5 @@ class testInternode():
     def test_str(self):
         print self.internode
 
+    def test_dvolume(self):
+        assert self.internode.dvolume == 0

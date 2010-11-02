@@ -5,11 +5,12 @@
 
 .. module:: PlanTiK
 
-OpenAlea plantik documentation
-#########################################################################
+#####################################
+OpenAlea plantik
+#####################################
 
 Module description
-==================
+######################
 
 .. sidebar:: Summary
 
@@ -24,13 +25,15 @@ Module description
     .. include:: user/overview.txt
 
 Documentation
-=============
+##################
 
 .. toctree::
     :maxdepth: 2
     :numbered:
 
-    User Guide<user/index.rst>   
+    User Guide<user/index.rst>
+    VisuAlea<user/visualea.rst>
+    Applications<user/pruning.rst>
     Reference Guide<user/autosum.rst>
     admin.rst
 
@@ -43,17 +46,17 @@ Documentation
    `openalea <http://openalea.gforge.inria.fr/dokuwiki/doku.php?id=packages:PlanTiK:PlanTiK:PlanTiK>`__ wiki.
 
 Authors
-=======
+########
 
 .. include:: ../AUTHORS.txt
 
 ChangeLog
-=========
+#########
 
 .. include:: ../ChangeLog.txt
 
 License
-=======
+#########
 
 |PlanTiK| is released under a Cecill-C License.
 

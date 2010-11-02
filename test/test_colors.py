@@ -12,4 +12,6 @@ class test_colors():
 
         self.c.red
         self.c.leaf
-    
+
+def test_gradient():
+    gradient(1)

@@ -5,7 +5,7 @@ pm.init(verbose=False)
 
 
 def test_dataflow_test():
-    names = ['ConfigParserRead', 'ConfigParserSave', 'ConfigParams']
+    names = ['ConfigParserRead', 'ConfigParserSave', 'ConfigParams', 'GrowthFunction']
     for i in range(0, len(names)):
         yield check,'test', names[i]
 

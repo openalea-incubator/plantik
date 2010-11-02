@@ -78,6 +78,9 @@ def test_events():
 
     # test print statement print e
     print e
+    
+    #test the getitem
+    assert e[0]  == e.events[0]
 
     # test remove_event
     e.remove_event('test')

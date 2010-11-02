@@ -1,3 +1,8 @@
+* 2010 Nov 3th; version 0.3
+   * completing documentation
+   * Refactoring of config module + visualea nodes
+
+
 * 2010 sept 6th: version 0.2
 
     * Major cleanup 

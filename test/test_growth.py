@@ -49,7 +49,7 @@ def test_linear_growth_function():
     res = gf.growthValue([1,2,3,4,5,6,7,8,9,10])
 
 
-def test_sigmoid_growth_function():
+def test_logistic_growth_function():
 
     # simple case, first generate the function (linear case)
     inf = 0.
@@ -61,5 +61,26 @@ def test_sigmoid_growth_function():
     age_span = range(int(maturation)+1)
     for age in age_span:
         result.append(gf.growthValue(age))
+
+
+def test_str():
+    gf = GrowthFunction()
+    print gf
+
+def test_sigmoid_growth_function():
+
+    # simple case, first generate the function (linear case)
+    inf = 0.
+    sup = 5.
+    maturation = 10.
+    gf = GrowthFunction(inf, sup, maturation, growth_function='sigmoid')
+
+    result = []
+    age_span = range(int(maturation)+1)
+    for age in age_span:
+        result.append(gf.growthValue(age))
+
+
+    assert gf.growthValue(maturation*100) == sup
 
 

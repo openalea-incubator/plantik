@@ -40,14 +40,6 @@ Simulation sub package
 tools sub package
 ====================
 
-:mod:`openalea.plantik.tools.levenshtein` module
---------------------------------------------------------------
-.. automodule:: openalea.plantik.tools.levenshtein
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :synopsis: see levenshtein module
-
 
 :mod:`openalea.plantik.tools.boxcounting` module
 --------------------------------------------------------------
@@ -56,22 +48,6 @@ tools sub package
     :undoc-members:
     :show-inheritance:
     :synopsis: see boxcounting module
-
-:mod:`openalea.plantik.tools.convex` module
---------------------------------------------------------------
-.. automodule:: openalea.plantik.tools.convex
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :synopsis: see convex module
-
-:mod:`openalea.plantik.tools.movies` module
---------------------------------------------------------------
-.. automodule:: openalea.plantik.tools.movies
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :synopsis: see movies module
 
 :mod:`openalea.plantik.tools.config` module
 --------------------------------------------------------------
@@ -89,6 +65,47 @@ tools sub package
     :inherited-members:
     :show-inheritance:
     :synopsis: see colors module
+
+:mod:`openalea.plantik.tools.convex` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.convex
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see convex module
+
+:mod:`openalea.plantik.tools.levenshtein` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.levenshtein
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see levenshtein module
+
+:mod:`openalea.plantik.tools.lightinterception` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.lightinterception
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`openalea.plantik.tools.lstring` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.lstring
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+    :synopsis: see lstring module
+
+
+:mod:`openalea.plantik.tools.movies` module
+--------------------------------------------------------------
+.. automodule:: openalea.plantik.tools.movies
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :synopsis: see movies module
 
 :mod:`openalea.plantik.tools.misc` module
 --------------------------------------------------------------
@@ -110,16 +127,14 @@ tools sub package
     :synopsis: see mtgtools module
 
 
-
-:mod:`openalea.plantik.tools.lstring` module
+:mod:`openalea.plantik.tools.strahler` module
 --------------------------------------------------------------
-.. automodule:: openalea.plantik.tools.lstring
+.. automodule:: openalea.plantik.tools.strahler
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
-    :synopsis: see lstring module
-
+    :synopsis: 
 
 :mod:`openalea.plantik.tools.surface` module
 --------------------------------------------------------------
@@ -133,7 +148,7 @@ tools sub package
 
 
 
-biotik sub package (tools)
+biotik sub package
 ==========================
 
 :mod:`openalea.plantik.biotik.collection` module
@@ -171,7 +186,7 @@ biotik sub package (tools)
     :show-inheritance:
     :synopsis: see growth module
 
-biotik sub package (components)
+biotik sub package
 ===============================
 
 :mod:`openalea.plantik.biotik.apex` module
@@ -233,6 +248,5 @@ biotik sub package (components)
 .. automodule:: openalea.plantik.biotik.root
     :members:
     :undoc-members:
-    :inherited-members:
     :show-inheritance:
     :synopsis: see root module

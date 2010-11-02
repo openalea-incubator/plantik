@@ -27,5 +27,3 @@ def test_surface():
     leaves = convex()
     totalSurface(leaves)
 
-def test_gradient():
-    gradient(1) 
