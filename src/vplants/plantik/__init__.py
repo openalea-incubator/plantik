@@ -1,15 +1,25 @@
 __revision__ = "$Id$"
 
-"""import simulation
-import plants
-import tools
-import biotik
 
+from openalea.deploy import get_metainfo
+
+
+version = get_metainfo('vplants.plantik', 'version')
+authors = get_metainfo('vplants.plantik', 'author')
+
+
+from vplants.plantik import biotik
 from biotik import *
-from plants import *
+
+from vplants.plantik import tools
 from tools import *
+
+from vplants.plantik import plants
+from plants import *
+
+from vplants.plantik import simulation
 from simulation import *
-"""
+
 
 
 def get_shared_data(file):

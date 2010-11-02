@@ -1,4 +1,4 @@
-from openalea.plantik.tools.config import ReadConfigFile
+from openalea.plantik.tools.config import ConfigParams
 import openalea.lpy as lpy
 from openalea.plantgl.all import *
 import openalea.lpy as lpy
@@ -13,7 +13,7 @@ app = QApplication([])
 Viewer.start()
 Viewer.animation(False)
 
-options = ReadConfigFile('parameter_analysis.ini')
+options = ConfigParams('parameter_analysis.ini')
 
 l = lpy.Lsystem(options.general.filename)
 options_pruning = l.context()['options']

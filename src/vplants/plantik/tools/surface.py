@@ -4,13 +4,16 @@
 
 .. module:: surface
     :synopsis: Facilities to read Lstudio surface files
+.. currentmodule:: openalea.plantik.tools.surface
+
 
 .. topic:: Summary
 
     Facilities to read Lstudio surface files
 
     :Code status: mature
-    :Documentation status: mature
+    :Documentation status: up-to-date
+    :Tests: 100%
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
 

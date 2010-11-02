@@ -11,66 +11,62 @@
 
     :Code: mature
     :Documentation: mature
+    :Tests: 100% coverage
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage:
-        >>> from openalea.plantik.biotik.branch import *
+        >>> from vplants.plantik.biotik.branch import *
 
 .. testsetup::
 
-    from openalea.plantik.biotik.branch import *
+    from vplants.plantik.biotik.branch import *
 
 """
-from openalea.plantik.biotik.component import *
-from openalea.plantik.biotik.collection import CollectionVariables, SingleVariable
-from openalea.plantik.biotik.context import Context
-from openalea.plantik.biotik.growthunit import GrowthUnit
+#from vplants.plantik.biotik.component import *
+from vplants.plantik.biotik.collection import CollectionVariables, SingleVariable
+from vplants.plantik.biotik.context import Context
+from vplants.plantik.biotik.growthunit import GrowthUnit
 
 
 
 class Branch(GrowthUnit):
-    """Branch class
-
-    A branch class is nothing else than a :class:`~openalea.plantik.biotik.growthunit.GrowthUnit` 
-    slightly modified to count the number of growth units. So, indirecly speaking, it is also a 
-    specialised version  of :class:`~openalea.plantik.biotik.component.ComponentInterface`.
-
-
+    """Branch component
+    
+    A branch component is a :class:`~openalea.plantik.biotik.growthunit.GrowthUnit` 
+    slightly modified to count the number of growth units instead of the internodes. 
+    
     :Example:
 
-    >>> from openalea.plantik.biotik.branch import *
+    >>> from vplants.plantik.biotik.branch import *
     >>> branch = Branch()
     >>> branch.radius
     0.001
-    >>> branch.variables.radius.values
-    [0.001]
-
-
-    :plotting:
-
-    If the store_data is True, the you can plot results either from the class instance :meth:`plot`
-    of from the variables stored in :attr:`variables`. The former being less flexible with only `plot` of
-    radius versus age, length versus age, length versus radius. And the latter provides plot of variable
-    versus age (the same as before) as well as histograms.
-
-
+    >>> branch.growthunit_counter
+    0
+    
     .. seealso:: :class:`~openalea.plantik.biotik.growthunit.GrowthUnit`
     """
     def __init__(self, birthdate=None, id=None, min_radius=0.001, store_data=True):
         """**Constructor**
 
-        see :class:`~openalea.plantik.biotik.growthunit.GrowthUnit` documentation
+        :param datetime.datetime birthdate:
+        :param int id:
+        :param float min_radius:
+        :param bool store_data:
+        
+        There is one attribute, :attr:`growthunit_counter` that counts the number
+        of GU in a branch.
+        
+        see :class:`~openalea.plantik.biotik.growthunit.GrowthUnit` for details
 
-        In addition, the tribute :attr:`growthunit_counter` is set and serve to store the number of 
-        growth unit in a branch, if required.
         """
         GrowthUnit.__init__(self, birthdate=birthdate, id=id, min_radius=min_radius, store_data=store_data)
         self._label = 'Branch' # for the read_only attributes to reset label from GrowtUnit to Branch
-        self.growthunit_counter = 0.# count number of growth units in this branch
+        self.growthunit_counter = 0# count number of growth units in this branch
 
 
     def __str__(self):
-        from openalea.plantik.tools.misc import title
+        from vplants.plantik.tools.misc import title
         res = super(Branch, self).__str__()
         res += title('other attributes')
         res += 'growthunit counter %s' % self.growthunit_counter

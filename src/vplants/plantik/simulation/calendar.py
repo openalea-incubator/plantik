@@ -4,16 +4,18 @@
 
 .. module:: calendar
     :synopsis: Calendar class and Event/Events classes
-
+.. currentmodule:: openalea.plantik.simulation.calendar
 
 .. topic:: summary
 
     This module implements the :class:`Calendar` class that ease manipulation of
-    dates and time. It also implementes the :class:`Event` that defines an event by a starting
-    time and duration. The :class:`Events` class is a list of events.
+    dates and time. It also implements the :class:`Event` that defines an event
+    by a starting time and duration. The :class:`Events` class is a list of 
+    events.
 
     :Code: mature
     :Documentation: mature
+    :Tests: 100%
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage: 
@@ -78,11 +80,10 @@ class Calendar(object):
 
         """
 
-        assert year!=-1 , "you must provide a valid year"
+        assert year != -1 , "you must provide a valid year"
         self._date = datetime.datetime(year=year, month=month, day=day)
         self._dt = datetime.timedelta(days=delta_in_days)
         self._year = year
-
 
     def _get_date(self):
         return self._date
@@ -108,22 +109,24 @@ class Calendar(object):
     def _get_year(self):
         return self._date.year
     def _set_year(self, year):
-        self._date = datetime.datetime(year, self._date.month, self._date.day, self._date.hour,
-            self.date.minute, self._date.second, self._date.microsecond)
+        self._date = datetime.datetime(year, self._date.month, self._date.day, 
+                                       self._date.hour, self.date.minute, 
+                                       self._date.second, 
+                                       self._date.microsecond)
         self._year = year
-    year = property(fget=_get_year, fset=_set_year ,doc="set current year.")
+    year = property(fget=_get_year, fset=_set_year , doc="set current year.")
 
     def _get_dt(self):
         return self._dt
     def _set_dt(self, dt):
         self._dt = datetime.timedelta(days=dt)
     dt = property(fget=_get_dt, fset=_set_dt,
-                  doc="Set the delta time increment in days (may be non integer)")
+             doc="Set the delta time increment in days (may be non integer)")
 
 
     def __str__(self):
-        res= 'current date and time= %s\n' % str(self._date)
-        res+= 'current increment= %s\n' % str(self._dt)
+        res = 'current date and time= %s\n' % str(self._date)
+        res += 'current increment= %s\n' % str(self._dt)
         return res
 
 
@@ -182,11 +185,14 @@ class Event(object):
 
         """
         # some assertions
-        assert type(starting_date) == datetime.datetime, 'date must be of type datetime.datetime()'
+        assert type(starting_date) == datetime.datetime, \
+            'date must be of type datetime.datetime()'
         assert type(name) == str, 'name must be of type str'
-        assert type(duration) == datetime.timedelta, 'duration must be of type datetime.timedelta'
+        assert type(duration) == datetime.timedelta, \
+            'duration must be of type datetime.timedelta'
         assert periodic in [True, False], 'duration must be of type boolean'
-        assert duration.days < 365, 'Duration of an event must be less than a year'
+        assert duration.days < 365, \
+            'Duration of an event must be less than a year'
 
 
         self._name = name
@@ -198,13 +204,14 @@ class Event(object):
 
     def __str__(self):
         res = self.name + " "
-        res+= str(self.starting_date) + "\n"
-        res+= " duration=" + str(self.duration) + "\n"
-        res+= " active=" + str(self.active) 
+        res += str(self.starting_date) + "\n"
+        res += " duration=" + str(self.duration) + "\n"
+        res += " active=" + str(self.active) 
         return res
 
     def isactive(self, date):
-        """Check whether the event staring and ending time are spanning a given date
+        """Check whether the event staring and ending time are spanning a 
+        given date.
 
         :param date: a :class:`datetime.datetime` instance
 
@@ -221,8 +228,8 @@ class Event(object):
 
         assert type(date) == datetime.datetime
 
-        # 2 cases: either the event is periodic and therefore occurs every year, or
-        # it happens only once. 
+        # 2 cases: either the event is periodic and therefore occurs every year,
+        # or it happens only once. 
 
         # non periodic case is simple:
         if self.periodic is False:
@@ -236,10 +243,12 @@ class Event(object):
             # to switch to the same year as the event itself. One problem arise 
             # when the original year is bissextil.
             try:
-                newdate = datetime.datetime(self.starting_date.year, date.month, date.day)
+                newdate = datetime.datetime(self.starting_date.year, 
+                                            date.month, date.day)
             except:
                 if date.month == 2 and date.day == 29:
-                    newdate = datetime.datetime(self.starting_date.year, date.month, date.day-1)
+                    newdate = datetime.datetime(self.starting_date.year, 
+                                                date.month, date.day-1)
 
             if self.ending_date >= newdate and self.starting_date <= newdate:
                 self._active = True
@@ -251,7 +260,8 @@ class Event(object):
         self._duration = datetime.timedelta(days=duration)
     def _get_duration(self):
         return self._duration
-    duration = property(fget=_get_duration,fset=_set_duration, doc="getter/setter for duration. duration is in days.")
+    duration = property(fget=_get_duration,fset=_set_duration, 
+                        doc="getter/setter for duration. duration is in days.")
 
     def _get_periodic(self):
         return self._periodic
@@ -267,11 +277,13 @@ class Event(object):
 
     def _get_starting_date(self):
         return self._starting_date
-    starting_date = property(fget=_get_starting_date, doc="returns starting date of this event.")
+    starting_date = property(fget=_get_starting_date, 
+                             doc="returns starting date of this event.")
 
     def _get_ending_date(self):
         return self._ending_date
-    ending_date = property(fget=_get_ending_date, doc="returns ending date of this event.")
+    ending_date = property(fget=_get_ending_date, 
+                           doc="returns ending date of this event.")
 
 
 class Events(object):
@@ -357,14 +369,15 @@ class Events(object):
         self.__delattr__(name)
         for i, event in enumerate(self.events):
             if event.name == name:
-                index =i
+                index = i
                 break
         del self.events[index]
 
 
     def _get_names(self):
         return [x.name for x in self.events]
-    names = property(fget=_get_names, doc="return list of event names stored in :attr:`events`.")
+    names = property(fget=_get_names, 
+                     doc="return list of event names stored in :attr:`events`.")
     
 
     def _get_events(self):

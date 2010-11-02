@@ -22,7 +22,7 @@
     from openalea.plantik.tools.config import *
 
 
-.. seealso:: visualea dataflows in :mod:`vplants.plantik.dataflows.config`
+.. seealso:: visualea dataflows in :mod:`openalea.plantik.dataflows.config`
 """
 
 __all__ = ["saveConfigParser", "ConfigParams", "createConfigParserExample"]
@@ -83,10 +83,10 @@ def saveConfigParser(filename=None, config=None):
     :param str filename: a valid filename 
     :param ConfigParser config: the config parser instance to save
 
-    >>> config = ReadConfigFile('config.ini') #doctest: +SKIP
-    >>> saveConfigParser('config2.ini', config) #doctest: +SKIP
+    >>> config = ConfigParams('config.ini') #doctest: +SKIP
+    >>> saveConfigParser('config2.ini', config.config) #doctest: +SKIP
 
-    .. seealso:: *SaveConfigFile* VisuAlea node :mod:`vplants.plantik.dataflows.config`
+    .. seealso:: *SaveConfigFile* VisuAlea node :mod:`openalea.plantik.dataflows.config`
 
     """
     try:
@@ -102,7 +102,7 @@ def saveConfigParser(filename=None, config=None):
 class _set_section(object):
     """utility to set attributes in a dictionary
 
-    Used by :class:`~openalea.plantik.tools.config.ReadConfigFile`
+    Used by :class:`~openalea.plantik.tools.config.ConfigParams`
     """
     def __init__(self, **kargs):
         for name, value in kargs.items():
@@ -115,7 +115,7 @@ class config_base(object):
     :class:`ConfigParser` instances.  
     
     
-    .. note:: Used by :class:`ConfigParams` and :class:`ReadConfigFile`
+    .. note:: Used by :class:`ConfigParams` and :class:`ConfigParams`
     
     """
     def __init__(self):
@@ -175,13 +175,13 @@ class config_base(object):
 class ConfigParams(config_base):
     """Convert a **ConfigParser** instance into **ConfigParams** object.
 
-    A :class:`ConfigParams` object ease the access to sections and options from a 
-    :class:`ConfigParser` instance. This class keeps track of the original
+    A :class:`~openalea.plantik.tools.config.ConfigParams` object ease the access to sections and options from a 
+    :class:`~ConfigParser.ConfigParser` instance. This class keeps track of the original
     ConfigParser instance (in the attribute *config*).
 
     In the following example, we first create a ConfigParser instance using
-    the :func:`createConfigParserExample`, which is converted using 
-    :class:`ConfigParams`::
+    the :func:`~openalea.plantik.tools.config.createConfigParserExample`, which 
+    is converted using :class:`ConfigParams`::
 
         >>> from openalea.plantik.tools.config import createConfigParserExample
         >>> config = createConfigParserExample() 
@@ -191,7 +191,7 @@ class ConfigParams(config_base):
     
         >>> assert config_params.Section1.int == 15
 
-    .. seealso:: *ConfigParams* VisuAlea node :mod:`vplants.plantik.dataflows.config`
+    .. seealso:: *ConfigParams* VisuAlea node :mod:`openalea.plantik.dataflows.config`
 
     """
     def __init__(self, config_or_filename):

@@ -1,14 +1,47 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+"""strahler module
+
+.. module:: strahler
+    :synopsis: strahler utilities
+
+.. topic:: summary
+
+    Compute strahler number
+
+    :Code: in progress
+    :Documentation: in progress
+    :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
+    :Revision: $Id$
+    :Usage:
+        >>> from openalea.plantik.tools.strahler import *
+
+.. testsetup::
+
+    from openalea.plantik.tools.strahler import *
+
+"""
+
+
+
+
 from openalea.mtg.aml import Rank
 import openalea.mtg.traversal as traversal
 
-__all__ = ['strahler']
+#__all__ = ['strahler']
 
     
 def strahler_symmetry(mtg):
+    """
+    .. todo:: to be checked
+    """
     return strahler(mtg) - max([Rank(a) for a in mtg])
 
 
 def strahler_order(g, vid):
+    """
+    
+    """
     strahler = {}
     for v in traversal.post_order(g, vid):
         children_strahler = [strahler[c] for c in g.children(v)]
@@ -20,4 +53,8 @@ def strahler_order(g, vid):
     return strahler
 
 def strahler(g, vid=2):
-   return max(strahler_order(g, vid).values())
+    """Returns the strahler number of a MTG for a given vid
+    
+    :param int vid: 
+    """
+    return max(strahler_order(g, vid).values()) 

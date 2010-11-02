@@ -1,16 +1,24 @@
-from openalea.plantik.biotik.component import ComponentInterface
+from vplants.plantik.biotik.component import ComponentInterface
 
 
 
 class Root(ComponentInterface):
-    """Root class
+    r"""Specialised version of :class:`~openalea.plantik.biotik.component.ComponentInterface`
+    dedicated to Roots.
 
-    Specialised version of ComponentInterface dedicated to Root.
+    :Example:
 
+    >>> from vplants.plantik.biotik.root import *
+    >>> i = Root(initial_resource=10)
+    >>> i.R
+    10
+    
+    
     This root class is an abstract root component that is used
     to store global information such as total resource of a plant.
 
 
+    .. deprecated:: 0.2 stored in plants (DARC values)
     """
     def __init__(self, initial_resource, birthdate=None):
         """

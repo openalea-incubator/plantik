@@ -9,6 +9,7 @@
 
     :Code: mature
     :Documentation: mature
+    :Tests: 100%
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage: >>> from openalea.plantik.biotik.collection import *
@@ -17,19 +18,22 @@
 
     from openalea.plantik.biotik.collection import *
 """
+import copy
 
 
 
 class SingleVariable(object):
-    """A variable factory containing evolution of the variable over time.
+    """A variable factory containing evolution of a variable over time.
 
-    There is a need to keep track of a variable values over time together with plotting
-    viewpoints.
 
-    This class allows to declare variable so that it is easy to manipulate data
-    during or after a simulation is over.
+    
+    with plotting viewpoints. 
+    This class allows to declare a variable so that it can be easily manipulated
+    during or after a simulation is over. It also provide viewpoints (plot and
+    histogram)
 
-    Parameters such as the :attr:`name`, :attr:`unit` and :attr:`values` can be provided.
+    Parameters such as the :attr:`name`, :attr:`unit` and :attr:`values` can
+    be provided.
 
     :Example:
 
@@ -40,11 +44,10 @@ class SingleVariable(object):
         >>> par1.values == [1]
         True
 
-
     .. warning:: implementation is not perfect...see code comments related to
         attributes.
 
-        this code should work as expected.
+        Be aware that the following code should work as expected.
 
         >>> par1 = SingleVariable(name='age', unit='mV')
         >>> par1.append(1)
@@ -52,19 +55,19 @@ class SingleVariable(object):
         >>> par1.values
         []
     """
-    def __init__(self, name,  values=[], unit='not specified', dt=1):
+    def __init__(self, name, values=[], unit='not specified', dt=1):
         """**Constructor**
 
-        :param str name: a name for the variable
-        :param list values: a list of values
+        :param str name: the variable name (compulsory)
+        :param list values: a list of values (default is [])
         :param str unit: a  unit label that may be used in the plots
         :param float dt: a time step (for plotting)
 
         :Attributes:
-            * :attr:`name`
-            * :attr:`unit`
-            * :attr:`values`
-            * :attr:`dt`
+            * :attr:`name` read-only
+            * :attr:`unit` read-only
+            * :attr:`values` read/write use the :meth:`append` method to write
+            * :attr:`dt` read-only
         """
         assert type(name) == str, 'name must be a string'
         assert type(unit) == str, 'unit must be a string'
@@ -77,8 +80,9 @@ class SingleVariable(object):
         # var1 = SingleVarible()
         # var1 still contains the [1] value!!
         # but using this deepcopy, it works...
-        import copy
         self._values = copy.deepcopy(values)
+        
+        
         self._dt = dt
 
     def __str__(self):
@@ -91,7 +95,8 @@ class SingleVariable(object):
 
         """
         # !!! use self.values not self._values otherwise memory issue may arise
-        #assert type(value) in [int, float], "values to be appended must be int or float %s provided %s" % (value, type(value))
+        #assert type(value) in [int, float], "values to be appended must be int
+        # or float %s provided %s" % (value, type(value))
         self.values.append(value)
 
     #def __delete__(self):
@@ -102,15 +107,15 @@ class SingleVariable(object):
         del self._values
     def _get_values(self):
         return self._values
-    values = property(fget=_get_values, fset=None, fdel=_del_values, doc='getter to values attribute')
+    values = property(fget=_get_values, fset=None, fdel=_del_values, 
+                      doc='getter to values attribute. Set add values, use :meth:`append`')
 
-    def _get_name(*args):
-        self = args[0]
+    def _get_name(self):
         return self._name
     name = property(fget=_get_name, fset=None, doc='getter to name attribute')
 
-    def _get_unit(*args):
-        self = args[0]
+    def _get_unit(self):
+        #self = args[0]
         return self._unit
     unit = property(fget=_get_unit, fset=None, doc='getter to unit attribute')
 
@@ -118,14 +123,15 @@ class SingleVariable(object):
         self._dt = dt
     def _get_dt(self):
         return self._dt
-    dt = property(fget=_get_dt, fset=_set_dt, doc='getter/setter to dt attribute')
+    dt = property(fget=_get_dt, fset=_set_dt, 
+                  doc='getter/setter to dt attribute')
 
     def plot(self, x=None, show=True, grid=True, id=1, **args):
         """Plot the values of the variable against time or a given x array.
 
 
-        :param list x: if no x data is provided, then an array based on :attr:`dt` is computed
-          otherwise, plot(x, self.values) is called.
+        :param list x: if no x data is provided, then an array based on 
+            :attr:`dt` is computed otherwise, plot(x, self.values) is called.
         :param bool grid: put a grid
         :param bool show: show the final plot
         :param `**args`: all standard pylab.plot parameters may be provided.
@@ -135,12 +141,9 @@ class SingleVariable(object):
             :width: 30%
 
             from openalea.plantik.biotik.collection import SingleVariable
+            from numpy.random import randn
             v = SingleVariable(name="temperature", unit="kelvin", dt=0.1)
-            v.append(1)
-            v.append(1.5)
-            v.append(1.8)
-            v.append(1.9)
-            v.append(2)
+            _dummy = [v.append(randn()) for x in xrange(1000)]            
             v.plot()
         """
         import pylab
@@ -154,7 +157,8 @@ class SingleVariable(object):
 
         pylab.xlabel('Time (in days)')
         pylab.ylabel('%s (%s)' % (self.name.replace('_','\_').title(), self.unit))
-        if show: pylab.show()
+        if show: 
+            pylab.show()
         pylab.grid(grid)
 
         return line2d
@@ -182,7 +186,8 @@ class SingleVariable(object):
         pylab.clf()
         pylab.hist(self.values, **args)
         pylab.xlabel('%s (%s)' % (self.name.replace('_','\_').title(), self.unit))
-        if show: pylab.show()
+        if show: 
+            pylab.show()
         pylab.grid(grid)
 
 
@@ -190,8 +195,9 @@ class SingleVariable(object):
 class CollectionVariables(dict):
     """A collection of :class:`~openalea.plantik.biotik.collection.SingleVariable` objects.
 
-    This class allows to collect several variables into a single object and to append
-    and access relevant data more easily.
+    This class allows to collect several 
+    :class:`~openalea.plantik.biotik.collection.SingleVariable` into a single 
+    object and to append and access relevant data more easily.
 
     :Example:
 
@@ -239,6 +245,11 @@ class CollectionVariables(dict):
     def append(self, values):
         """
 
+        :param list values: a list of values corresponding to the different
+            variables. The order must be the alphabetical order to the variables
+            names.
+            
+            
         >>> col = CollectionVariables()
         >>> col.add(SingleVariable(name='radius', unit='days', values=[1]))
         >>> col.add(SingleVariable(name='age', unit='days', values=[0]))
@@ -247,16 +258,16 @@ class CollectionVariables(dict):
         [1]
         >>> col.age.values
         [0]
-        >>> col.append([1,1])
+        >>> col.append([1,2])
         >>> col.radius.values
-        [1, 1]
+        [1, 2]
         >>> col.age.values
         [0, 1]
 
 
         """
         if len(values) != len(self.keys()):
-             raise SyntaxError("""
+            raise SyntaxError("""
                 If you want to use the append method of a Collection, the input parameters
                 must be of the same length as the collection itself and the order should be
                 the order of the names attributes. See the documentation of the
@@ -266,20 +277,22 @@ class CollectionVariables(dict):
 
 
     def __str__(self):
-        from openalea.plantik.tools.misc import title
-        res = title("SingleVariables found in this collection are:")
+        import openalea.plantik.tools.misc as misc
+        res = misc.title("SingleVariables found in this collection are:")
         for name in self.keys():
-            res += " * "+name + ": values length is " + str(len(getattr(self, name).values)) + "\n"
+            res += " * "+name + ": values length is " + \
+                str(len(getattr(self, name).values)) + "\n"
         return res
 
     def _valid_names(self, names=None):
         """check that input names are part of the singleVariables
 
-        First, this function transform names into a list it is not already a list. If None is
-        provided, then, we use the dictionary keys as a list.
+        First, this function transform names into a list it is not already a 
+        list. If None is provided, then, we use the dictionary keys as a list.
 
-        Second, this function checks that the input parameter `names` is correct. Indeed, if the
-        contents of `names` is not None then it is checked with respect to the variables.keys().
+        Second, this function checks that the input parameter `names` is correct.
+        Indeed, if the contents of `names` is not None then it is checked with
+        respect to the variables.keys().
 
         :return: list of names depending on the input parameter `names`
 

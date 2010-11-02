@@ -2,8 +2,10 @@
 #-*- coding: utf-8 -*-
 """allocation module
 
-.. module allocation
+
+.. module:: allocation
     :synopsis: allocation methods
+.. currentmodule:: openalea.plantik.plants.allocation
 
 .. topic:: summary
 
@@ -11,6 +13,7 @@
 
     :Code: mature
     :Documentation: mature
+    :Tests: 100%
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage:
@@ -26,20 +29,49 @@
 class Allocation():
     """Manage allocation model
 
+
+    The following creates an lstring made of 3 apices. Then, an Allocation
+    instance is create with a proportional model option. And, the allocation
+    is computed, given a total resource of 6. We check that indeed, the 3
+    apice got the same ratio of allocated resource (here 2.)  
+    
+    
     >>> from openalea.lpy import AxialTree, ParamModule
-    >>> A = ParamModule('A', Apex())
-    >>> lstring = AxialTree([A,A,A])
+    >>> lstring = AxialTree()
+    >>> for x in range(3):
+    ...     A = ParamModule('A', Apex())
+    ...     lstring.append(A)    
     >>> a = Allocation("proportional", 1)
     >>> a.compute_allocation(lstring, 6)
     6.0
+    >>> lstring[0][0].allocated == 2.
+    True
+    >>> lstring[1][0].allocated == 2.
+    True
+    >>> lstring[2][0].allocated == 2.
+    True
+    
+    See the following for more details.
     """
 
     def __init__(self, model, dt, sinks=['A'], perturbation=0.0):
         """**Constructor**
 
         :param str model: a model in ['proportional', 'proportional2', 'hierarchical']
-        :param float dt: the delta t
+        :param float dt: the time step in days (must be provided)
         :param perturbation: used to create some noisy demands.
+        
+        :Attributes:
+            * From parameters
+                * :attr:`model`
+                * :attr:`perturbation`
+                * :attr:`dt`
+            * Others
+                * :attr:`sinks`
+                * :attr:`R`
+                * :attr:`D`
+                * :attr:`lstring`
+                * :attr:`allocated`
         """
 
         self._model = model
@@ -55,13 +87,16 @@ class Allocation():
     def compute_allocation(self, lstring, R, **args):
         """Call the appropriate allocation methods
 
-        Given the total resource **R** and lstring, compute the total demand **D**
-        and allocate resource to each component according to the allocation model.
+        Given the total resource **R** and **lstring**, compute the total
+        demand **D** and allocate resource to each lstring component according
+        to the allocation model.
 
         :param axialtree lstring:
         :param float R: the total demand
         :return: the total resources allocated to the different components.
 
+        .. seealso:: :meth:`proportional`, 
+            :meth:`~openalea.plantik.plants.allocation`
         """
         self.R = float(R)
         self._lstring = lstring
@@ -79,7 +114,7 @@ class Allocation():
 
 
     def computeTotalDemand(self):
-        """Compute the total demand of the lstring
+        """Compute the total demand of all components found in the lstring
 
         The selection of components is amde according to the contents of 
         :attr:`sinks`, which is only apices by default!

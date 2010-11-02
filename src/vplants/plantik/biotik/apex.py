@@ -4,6 +4,7 @@
 
 .. module:: apex
     :synopsis: Apices functionalities and classes
+.. currentmodule:: openalea.plantik.biotik.apex
 
 
 .. topic:: Summary
@@ -15,30 +16,51 @@
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id: fruit.py 8635 2010-04-14 08:48:47Z cokelaer $
     :Usage:
-        >>> from openalea.plantik.biotik.apex import *
+        >>> from vplants.plantik.biotik.apex import *
 
 .. testsetup::
 
-    from openalea.plantik.biotik.apex import *
+    from vplants.plantik.biotik.apex import *
 
 """
 
-from openalea.plantik.biotik.collection import * 
-from openalea.plantik.biotik.context import Context
-from openalea.plantik.biotik.component import ComponentInterface
-from openalea.plantik.biotik.growth import GrowthFunction
+from vplants.plantik.biotik.collection import SingleVariable, CollectionVariables 
+from vplants.plantik.biotik.context import Context
+from vplants.plantik.biotik.component import ComponentInterface
+from vplants.plantik.biotik.growth import GrowthFunction
 from math import pi, exp
-from openalea.plantik.tools.misc import title
+from vplants.plantik.tools.misc import title
 
 
 
 class Apex(ComponentInterface):
-    """class dedicated to apex component.
+    r"""class dedicated to apex component.
 
     An apex is a biological objects that can produce other biological objects.
     As a biological component, it inherits attributes and methods
-    from :class:`~openalea.plantik.biotik.component.ComponentInterface`.
+    from :class:`~vplants.plantik.biotik.component.ComponentInterface`.
 
+    :Example:
+
+    >>> from vplants.plantik.biotik.apex import Apex
+    >>> i = Apex(store_data=True)
+    >>> i.age.days
+    0
+    
+    :Notation:
+
+    * age of an apex is denoted :math:`t_a`
+
+    .. csv-table:: **Notation related to** :class:`~openalea.plantik.biotik.apex.Apex`
+        :header: Name, symbol, default value
+        :widths: 15,20,20
+        
+        optimal demand      , :math:`d^{(a)_0}`     , 2 UR
+        plastochron         , :math:`T^{(a)}_p`     , 3 days
+        growth threshold    , :math:`\lambda`       , 0.2
+        metamer cost        , :math:`m_{\rm cost}`  , 2 UR
+        living cost         ,-                      , 0
+        vigor               ,-                      , 0.1
 
     """
     def __init__(self, birthdate=None, 
@@ -51,14 +73,16 @@ class Apex(ComponentInterface):
         :param float demand:  (default is 2)
         :param float metamer_cost:    (default is 2)
         :param float livingcost: (default is 0)
-        :param float height:
+        :param float height:   (default is 0)
         :param int id: (default is 0)
         :param plastochron: (default is 3)
+        :param float growth_threshold: a value between  0 and 1 allowing a 
+            production once allocation is larger than this value
         :param vigor: (default is 0.1)
         :param store_data: used by :meth:`save_data_product` to save data at each 
            time step (default is False).
-        :param float growth_threshold: a value between  0 and 1 allowing a 
-            production once allocation is larger than this value
+
+        Additional attributes 
 
         :attributes:
             * :attr:`current_plastochron`:
@@ -71,10 +95,10 @@ class Apex(ComponentInterface):
             * :attr:`internodes_created`  keep track of the number of internodes created by this
                 apex (default is 0.).
 
-        .. todo:: finalise the doc (attributes) and cleaning up the code`
         """
         self.context = Context()
-        ComponentInterface.__init__(self, label='Apex', birthdate=birthdate, id=id)
+        ComponentInterface.__init__(self, label='Apex', birthdate=birthdate, 
+                                    id=id)
 
 
         # read-only attribute
@@ -90,11 +114,16 @@ class Apex(ComponentInterface):
         self._growth_threshold = growth_threshold
 
         self.variables = CollectionVariables()
-        self.variables.add(SingleVariable(name='age', unit='days', values=[self.age.days]))
-        self.variables.add(SingleVariable(name='height', unit='meters', values=[self.height]))
-        self.variables.add(SingleVariable(name='demand', unit='biomass unit', values=[self.demand]))
-        self.variables.add(SingleVariable(name='allocated', unit='biomass unit', values=[self.allocated]))
-        self.variables.add(SingleVariable(name='vigor', unit='biomass unit', values=[self.vigor]))
+        self.variables.add(SingleVariable(name='age', unit='days', 
+                                          values=[self.age.days]))
+        self.variables.add(SingleVariable(name='height', unit='meters', 
+                                          values=[self.height]))
+        self.variables.add(SingleVariable(name='demand', unit='biomass unit', 
+                                          values=[self.demand]))
+        self.variables.add(SingleVariable(name='allocated', unit='biomass unit', 
+                                          values=[self.allocated]))
+        self.variables.add(SingleVariable(name='vigor', unit='biomass unit', 
+                                          values=[self.vigor]))
 
 
         #read-write attributes
@@ -109,7 +138,7 @@ class Apex(ComponentInterface):
 
 
         self.father_radius = 0.
-        self.interruption = 0.              # time step during which an apex is not growing
+        self.interruption = 0.   # time step during which an apex is not growing
         self.growing = False
         self.internodes_created = 0.        # count number of internodes created by this apex
 
@@ -132,10 +161,24 @@ class Apex(ComponentInterface):
     vigor = property(_getVigor, _setVigor, None, doc="getter/setter to distance between apex and root")
 
     def update(self, dt):
-        """A re-definition of ComponentsInterface.update method
+        """Update function
 
-        Calls :meth:`~openalea.plantik.biotik.component.ComponentsInterface.update`, then 
-        it updates the :attr:`current_plastochron`, 
+        This update function performs the following tasks:
+
+        #. increment age by dt
+        #. increment plastochron by dt
+        #. increment interruption time by dt
+
+        #. calls :meth:`demandCalculation`, :meth:`resourceCalculation` and 
+           :meth:`computeLivingCost`
+
+        #. store age into variables.age
+        #. store height into variables.height
+        #. store demand into variables.demand
+        #. store allocated into variables.allocated
+        #. store vigor into variables.vigor
+
+        :param float dt: 
         """
         super(Apex, self).update(dt)
         self.current_plastochron += dt
@@ -149,34 +192,44 @@ class Apex(ComponentInterface):
             self.variables.vigor.append(self.vigor)
 
     def demandCalculation(self,  **kargs):
-        """Compute the demand of an apex according to its context
+        r"""Compute the demand of an apex according to its context
 
 
-        :param float alpha:
-        :param float beta:
-        :param float gamma:
-        :param float delta:
-        :param str context: order_height
+        :param float context: order_height :math:`\alpha_o`
+        :param float context: height_height :math:`\alpha_h`
+        :param float context: rank_height :math:`\alpha_r`
+        :param float context: age_height :math:`\alpha_a`
+        :param float context: vigor_height :math:`\alpha_v`
 
         The order is denoted :math:`o`.
-        The height is :math`p`.
+        The height is :math`h`.
+        The rank is :math`r`.
         The age is :math`a`.
+        The satisfaction is :math`v`.
 
         .. math::
 
-            \\frac{1}{(1+o)^\\alpha}
+                d = d_0 \mathcal{O} \mathcal{H} \mathcal{R} \mathcal{A} \mathcal{V}
 
         .. math::
 
-            \\frac{1}{(1+p)^\\beta}
+            \mathcal{O} = \frac{1}{(1 + o)^{\alpha_o}}
 
         .. math::
 
-            (\\frac{1}{1+exp^{+(0.03*(age-90.))}})^\gamma
+            \mathcal{H} = \frac{1}{(1+h)^{\alpha_h}}
 
         .. math::
 
-            (vigor)^\delta
+            \mathcal{R} = \frac{1}{(1+r)^{\alpha_r}}
+
+        .. math::
+
+            \mathcal{A} = (\frac{1}{1+exp^{+(0.03*(age-90.))}})^{\alpha_a}
+
+        .. math::
+
+            \mathcal{V} = (vigor)^{\alpha_v}
         """
 
         order_coeff = kargs.get("order_coeff", 0)
@@ -188,7 +241,8 @@ class Apex(ComponentInterface):
 
         #todo refactoering switch model to context
         model = context
-        assert model in ["none", "order_height_age",  "order_height"], 'check your config.ini file (model field)'
+        assert model in ["none", "order_height_age",  "order_height"], \
+            'check your config.ini file (model field) %s provided ' % model
         order = self.context.order
         height = self.context.height
         rank = self.context.rank
@@ -214,11 +268,23 @@ class Apex(ComponentInterface):
         pass
 
     def resourceCalculation(self):
+        """Apices returns resource equals zero"""
         assert self.resource == 0, "how come apex have some resource ? "
         return self.resource
 
 
     def plot(self, clf=True, show=True, symbol='-o'):
+        """Plot internal state variables such as demand and allocated resource
+
+        .. plot::
+
+            from pylab import *
+            from openalea.plantik.biotik.apex import Apex
+            a = Apex(store_data=True)
+            [a.update(1) for x in range(10)]
+            a.plot()
+
+        """
         import pylab
 
         height = self.variables.height.plot(show=False)[0]
@@ -250,7 +316,8 @@ class Apex(ComponentInterface):
         """plot some results
 
         :param list variables: plot results related to the variables provided
-        :param bool show: create but do not show the plot (useful for test, saving)
-        :param  args: any parameters that pylab.plot would accept.
+        :param bool show: show plot or not (default is True). Useful for testing, saving
+        :param bool grid: set grid on or off (default True)
+        :param args: any parameters that pylab.plot would accept.
         """
         self.variables.plot(variables=variables, show=show, grid=grid, **args)

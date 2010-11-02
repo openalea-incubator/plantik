@@ -1,21 +1,30 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""growth module
+"""
 
 .. module:: growth 
     :synopsis: tools related to growth functions
+.. currentmodule:: openalea.plantik.biotik.growth
+
 
 .. topic:: summary
 
     Provide tools for growth functions.
 
     :Code: mature
-    :Documentation: mature
+    :Documentation: completed
+    :Tests: 100% coverage
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage: >>> from openalea.plantik.biotik.growth import *
+    
+    
+.. seealso:: visualea dataflows in :mod:`vplants.plantik.dataflows.growth`
+
 """
 
+
+__all__ = ['GrowthFunction']
 
 class GrowthFunction(object):
     """Factory for growth functions
@@ -30,28 +39,45 @@ class GrowthFunction(object):
         from pylab import *
 
         gf = GrowthFunction(growth_function='logistic', maturation=12)
-        age = range(0, int(gf.maturation)+1)
+        age = range(0, int(gf.maturation)+5)
         plot(age, gf.growthValue(age))
         xlabel('Age in days')
         ylabel('Growth Function output')
+        grid()
 
     """
+    growth_function_methods = ['linear', 'sigmoid', 'logistic']
+
     def __init__(self, A=0., K=1., maturation=12., nu=1.,
-                 growth_function='logistic', growth_rate=0.5):
-        """**GrowthFunction constructor**
+                 growth_function='logistic', growth_rate=1):
+        r"""**GrowthFunction constructor**
 
         :param float A: the lower asymptote (default is 0.); read-only attribute.
         :param float K: the upper asymptote (default is 1.); read-only attribute.
         :param float maturation: in days (default is 12); read-only attribute.
-        :param str growth_function: the type of growth function. Either 'linear' or
-            'logistic' (default is 'linear'); read-only attribute
-        :param float growth_rate: Must be in the range [0,1] (default is 0.5); read-only attribute.
+        :param str growth_function: the type of growth function. Either 'linear',
+            'sigmoid' or 'logistic' (default is 'linear'); read-only attribute
+        :param float growth_rate: (default is 1); read-only attribute.
 
+
+        .. csv-table:: Notations
+            :header: "name", "notation", "default value"
+            :widths: 15,15,15 
+        
+            inf bound      ,A                , 0
+            sup bound      ,K                , 0
+            growth rate    ,:math:`\lambda`  , 1
+            maturation     ,:math:`T_m`      , 12
+            nu             ,:math:`\nu`      , 1
+            age            ,:math:`t_a`              , 0
+
+        .. note:: with the default values of nu=1, growth_rate=1, a logistic
+            function is equivalent to a sigmoid function.
         """
-        growth_labels = ['linear', 'sigmoid', 'logistic']
+        valid_methods = GrowthFunction.growth_function_methods
 
-        assert growth_function in growth_labels, \
-            'Wrong value for growth function. Expected %s' % growth_labels
+        assert growth_function in valid_methods, \
+            'Wrong value for growth function. Expected %s' % valid_methods
 
         self._A = float(A)
         self._K = float(K)
@@ -71,14 +97,14 @@ class GrowthFunction(object):
         res += "parameter growth rate       = %s\n"  % self.growth_rate
         return res
 
-
     def _getMaturation(self):
         return self._maturation
     maturation = property(_getMaturation, None, None, "getter for maturation")
 
     def _getGrowthFunction(self):
         return self._growth_function
-    growth_function = property(_getGrowthFunction, None, None, "getter for growth function")
+    growth_function = property(_getGrowthFunction, None, None, 
+                               "getter for growth function method")
 
     def _getGrowthRate(self):
         return self._growth_rate
@@ -93,42 +119,59 @@ class GrowthFunction(object):
     K = property(_getSupBound, None, None, "getter for sup bound")
 
     def growthValue(self, age):
-        r"""returns value of the element given its age
+        r"""returns value(s) of the growth function given its age
 
-        The model used to compute the growth function is either 'linear'
-        or 'logisitic'. The latter being computed by the 
-        :func:`~openalea.plantik.bioitk.growth.generalisedLogisticFunction` function.
 
-        :param float,int.list age: age at which the growth function should be calculated
-
+        :param (float,int,list) age: age at which the growth function should be calculated
         :return: returns a float if `age` is an integer or float and returns 
-            a numpy.array is `age` is a list.
+            a numpy.array if `age` is a list. 
+            
+        .. warning:: The function retunrs *K* if the age if larger than the 
+            maturation.
+        
+        The model used to compute the growth function can be either 
+        
+            *  'linear'
+            
+              .. math::
+                    
+                    A  + (K-A)\frac{t_a}{T_m}
+  
+            * 'sigmoid'
+            
+              .. math::
+              
+                  A  + \frac{K-A}{ 1 \exp^{\lambda * (t_a + T_m/2.)}}
+                                  
+            * 'logistic'. See :func:`~openalea.plantik.bioitk.growth.generalisedLogisticFunction`.
 
         """
-
-        if type(age) == list:
-            from numpy import array, exp
-            age = array(age)
-        else:
+        import numpy
+        
+        if type(age) in [float, int]:
             if age > self.maturation:
                 return self.K
-            from math import exp
-
+        
+        age = numpy.array(age)
+        
+        # set all values greater than maturation to maturation
+        age = numpy.where(age>self.maturation, self.maturation, age)
+        
         if self.growth_function == 'linear':
             return self.A  + (self.K-self.A) * age / self.maturation
 
         elif self.growth_function == 'sigmoid':
             return self.A  + (self.K-self.A) \
-                /(1.+exp(self.growth_rate*(-age+self.maturation/2.)))
+                /(1.+numpy.exp(self.growth_rate*(-age+self.maturation/2.)))
 
-        elif self.growth_function == 'logistic':
-            y = generalisedLogisticFunction(age, A=self.A, K=self.K, B=self.growth_rate, 
-                nu=self.nu, Q=1, M=self.maturation/2.)
+        else: # we should be in the logistic case.
+            y = generalisedLogisticFunction(age, A=self.A, K=self.K, 
+                B=self.growth_rate, nu=self.nu, Q=1, M=self.maturation/2.)
             return y
+        
 
 
-
-def generalisedLogisticFunction(x, A=0, K=1, B=1,nu=1, Q=1, M=0 ):
+def generalisedLogisticFunction(x, A=0, K=1, B=1, nu=1, Q=1, M=0 ):
     r"""The generalized logistic function
 
     Also known as Richards' curve is flexible sigmoid function for growth modelling, 
@@ -148,8 +191,10 @@ def generalisedLogisticFunction(x, A=0, K=1, B=1,nu=1, Q=1, M=0 ):
 
 
     A and K efects set the ymin and ymax values. B is the growth rate usually taken
-    to be 0.5. Q, :math:`\nu` and M are for even more tuning. See examples here below 
+    to be 1. Q, :math:`\nu` and M are for even more tuning. See examples here below 
     to get a pictural explanation. M can be seen as a shift parameter if :math:`Q=\nu`
+
+    .. seealso:: :meth:`~openalea.plantik.biotik.growth.GrowthFunction.growth_value`
 
     :Example of B effects:
 
@@ -200,9 +245,9 @@ def generalisedLogisticFunction(x, A=0, K=1, B=1,nu=1, Q=1, M=0 ):
         pylab.legend(loc='best')
         pylab.grid(True)
     """
-    assert nu>0, "nu must be positive"
-    from pylab import exp
-    return A + (K-A)/(1.+Q*exp(-B*(x-M)))**(1./nu)
+    assert nu > 0, "nu must be positive"
+    from numpy import exp
+    return A + (K - A) / (1. + Q*exp(-B*(x-M)))**(1./nu)
 
 
 

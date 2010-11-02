@@ -14,17 +14,18 @@
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
-    :Usage:  >>> from openalea.plantik.biotik.plant import *
+    :Usage:  >>> from vplants.plantik.biotik.plant import *
 
 .. testsetup::
 
-    from openalea.plantik.biotik.plant import *
-    from openalea.plantik import get_shared_data, ReadConfigFile
-    options = ReadConfigFile(get_shared_data('pruning.ini'))
+    from vplants.plantik.biotik.plant import *
+    from vplants.plantik import get_shared_data
+    from vplants.plantik.tools.config import ConfigParams
+    options = ConfigParams(get_shared_data('pruning.ini'))
 
 """
-from openalea.plantik.biotik.collection import *
-from openalea.plantik.tools.mtgtools import MTGTools
+from vplants.plantik.biotik.collection import SingleVariable, CollectionVariables 
+from vplants.plantik.tools.mtgtools import MTGTools
 
 
 
@@ -48,7 +49,7 @@ class Plant(object):
 
         :param float time_step: the time step of the simulation.
         :param options: a variable containing the simulation options from the config 
-            file (see :class:`~openalea.plantik.tools.config.ReadConfigFile`)
+            file (see :class:`~vplants.plantik.tools.config.ConfigParams`)
         :param str revision: a SVN revision for book keeping.
         :param float pipe_fraction:
         :param str filename:  if None, populates attribute :attr:`filename` with 'plant'
@@ -57,8 +58,10 @@ class Plant(object):
         :param pipe_fraction: cost of the pipe model is metamer_growth volume times the
           pipe_fraction parameter
 
-            >>> from openalea.plantik import get_shared_data, ReadConfigFile, Plant
-            >>> options = ReadConfigFile(get_shared_data('pruning.ini'))
+            >>> from vplants.plantik import get_shared_data
+            >>> from vplants.plantik.tools import  ConfigParams
+            >>> from vplants.plantik.biotik import Plant
+            >>> options = ConfigParams(get_shared_data('pruning.ini'))
             >>> plant = Plant(1, options, revision=1, tag='test')
             >>> plant.filename
             'plant_test'
@@ -75,13 +78,13 @@ class Plant(object):
             * :attr:`mtg`:
             * :attr:`lstring`: used to store the lstring of an lsystem
             * :attr:`dt`:
-            * :attr:`mtgtools`: an attribute of type :class:`~openalea.plantik.tools.mtgtools.MTGTools` that is used
+            * :attr:`mtgtools`: an attribute of type :class:`~vplants.plantik.tools.mtgtools.MTGTools` that is used
               to store the mtg and retrieve many relevant information. It also has a DB facility.
-            * :attr:`variables`: a :class:`~openalea.plantik.biotik.collection.CollectionVariables` instance containing the `pipe_ratio`
+            * :attr:`variables`: a :class:`~vplants.plantik.biotik.collection.CollectionVariables` instance containing the `pipe_ratio`
               variable. pipe_ratio contains is the ratio of resource attributed to the pipe model over time.
-            * :attr:`counter`: a :class:`~openalea.plantik.biotik.collection.CollectionVariables` instance containing the count of 
+            * :attr:`counter`: a :class:`~vplants.plantik.biotik.collection.CollectionVariables` instance containing the count of 
               leaves/internodes/apices/growth units/branches over time. See also :meth:`plot_counter` and :meth:`update_counter`.
-            * :attr:`DARC`: a :class:`~openalea.plantik.biotik.collection.CollectionVariables` instance containing the DARC values. 
+            * :attr:`DARC`: a :class:`~vplants.plantik.biotik.collection.CollectionVariables` instance containing the DARC values. 
               See also :meth:`plot_DARC` and :meth:`update_DARC`. DARC stands for Demand, Allocated, Resource, Cost
 
 
@@ -130,19 +133,22 @@ class Plant(object):
 
         #: extract storeage for variables over time inluding :attr:`pipe_ratio` and :attr:`dV`.
         self.variables = CollectionVariables()
-        self.variables.add(SingleVariable(name='pipe_ratio', unit='ratio', values=[]))
-        self.variables.add(SingleVariable(name='dV', unit='ratio', values=[]))
+        self.variables.add(SingleVariable(name='pipe_ratio', unit='ratio', 
+                                          values=[]))
+        self.variables.add(SingleVariable(name='dV', unit='ratio'))
 
-        #: a CollectionVariable instance that containes the count of **apices**, **internodes**, **leaves**
-        #: **branches** and growth units (denoted **gus**) at each time step. For instance, to acces to apices counter::
+        #: a CollectionVariable instance that containes the count of
+        # **apices**, **internodes**, **leaves**
+        #: **branches** and growth units (denoted **gus**) at each time step. 
+        #For instance, to acces to apices counter::
         #:
         #: >>> plant.counter.apices.values
         self.counter = CollectionVariables()
-        self.counter.add(SingleVariable(name='apices', unit=r'#', values=[]))
-        self.counter.add(SingleVariable(name='internodes', unit=r'#', values=[]))
-        self.counter.add(SingleVariable(name='leaves', unit=r'#', values=[]))
-        self.counter.add(SingleVariable(name='branches', unit=r'#', values=[]))
-        self.counter.add(SingleVariable(name='gus', unit=r'#', values=[]))
+        self.counter.add(SingleVariable(name='apices', unit=r'#'))
+        self.counter.add(SingleVariable(name='internodes', unit=r'#'))
+        self.counter.add(SingleVariable(name='leaves', unit=r'#'))
+        self.counter.add(SingleVariable(name='branches', unit=r'#'))
+        self.counter.add(SingleVariable(name='gus', unit=r'#'))
 
         #: a CollectionVariable instance that contains the demand (D), allocated resources(R), 
         #: resources (R) and cost (C) at each time step. To acces to demand over time::
@@ -153,7 +159,7 @@ class Plant(object):
         self.DARC.add(SingleVariable(name='A', unit='biomass unit', values=[]))
         self.DARC.add(SingleVariable(name='R', unit='biomass unit', values=[]))
         self.DARC.add(SingleVariable(name='C', unit='biomass unit', values=[]))
-        self.DARC.add(SingleVariable(name='pipe_cost', unit='biomass unit', values=[]))
+        self.DARC.add(SingleVariable(name='pipe_cost', unit='biomass unit'))
 
 
     def __str__(self):
@@ -178,8 +184,8 @@ class Plant(object):
             :include-source:
             :width: 50%
 
-            from openalea.plantik import *
-            options = ReadConfigFile(get_shared_data('pruning.ini'))
+            from vplants.plantik import *
+            options = ConfigParams(get_shared_data('pruning.ini'))
             plant = Plant(1, options)
             for x in range(100):
                 plant.DARC.D.append(0.25)
@@ -194,6 +200,7 @@ class Plant(object):
         """
         from pylab import bar, hold, legend, title, figure, clf, xlabel
         import numpy
+
         T = numpy.array(self.time)
         D = numpy.array(self.DARC.D.values)
         A = numpy.array(self.DARC.A.values)
@@ -228,9 +235,9 @@ class Plant(object):
             :include-source:
             :width: 50%
 
-            from openalea.plantik.biotik.plant import *
-            from openalea.plantik import get_shared_data, ReadConfigFile
-            options = ReadConfigFile(get_shared_data('pruning.ini'))
+            from vplants.plantik.biotik.plant import *
+            from vplants.plantik import get_shared_data, ConfigParams
+            options = ConfigParams(get_shared_data('pruning.ini'))
             plant = Plant(1,options)
             for x in range(100):
                 plant.DARC.D.append(x**0.5)
@@ -290,9 +297,9 @@ class Plant(object):
             :include-source:
             :width: 50%
 
-            from openalea.plantik.biotik.plant import *
-            from openalea.plantik import get_shared_data, ReadConfigFile
-            options = ReadConfigFile(get_shared_data('pruning.ini'))
+            from vplants.plantik.biotik.plant import *
+            from vplants.plantik import get_shared_data, ConfigParams
+            options = ConfigParams(get_shared_data('pruning.ini'))
             plant = Plant(1,options)
             for x in range(100):
                 plant.counter.apices.append(x**0.5)
@@ -498,9 +505,9 @@ class Plant(object):
  
         # save the number of internodes in each GU using standard mtg code.
         for vid in gu_ids:
-           counter = len([id for id in list(self.mtg.components_at_scale(vid,4))
+            counter = len([id for id in list(self.mtg.components_at_scale(vid,4))
                           if self.mtg.class_name(id)=='I'])
-           self.mtg.property('GrowthUnit')[vid].internode_counter = counter
+            self.mtg.property('GrowthUnit')[vid].internode_counter = counter
         
         # computes the length
         for vid in gu_ids:
@@ -537,18 +544,18 @@ class Plant(object):
             return
 
         for vid in branch_ids:
-           counter = len([id for id in list(self.mtg.components_at_scale(vid,4))
+            counter = len([id for id in list(self.mtg.components_at_scale(vid,4))
                           if self.mtg.class_name(id)=='I'])
-           self.mtg.property('Branch')[vid].internode_counter = counter
-           counter = len([id for id in list(self.mtg.components_at_scale(vid,3))
+            self.mtg.property('Branch')[vid].internode_counter = counter
+            counter = len([id for id in list(self.mtg.components_at_scale(vid,3))
                           if self.mtg.class_name(id)=='U'])
-           self.mtg.property('Branch')[vid].growthunit_counter = counter
+            self.mtg.property('Branch')[vid].growthunit_counter = counter
 
         # calculate the branches total length
         internode_ids = [Components(x,Scale=4) for x in branch_ids]
         length = [[sum([self.mtg.property('Internode')[id].length for id in y if self.mtg.class_name(id)=='I'])]  for y in internode_ids]
         for vid,length in zip(branch_ids, length):
-           self.mtg.property('Branch')[vid].length = length[0]
+            self.mtg.property('Branch')[vid].length = length[0]
 
         #compute the branches radius
         for vid in branch_ids:
@@ -582,10 +589,6 @@ class Plant(object):
     def _get_time(self):
         return self._time
     time = property(fget=_get_time,  doc="getter for the time array")
-
-    def _get_revision(self):
-        return self._revision
-    revision = property(fget=_get_revision,fset=None, doc="getter to revision")
 
     def _get_filename(self):
         return self._filename

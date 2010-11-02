@@ -12,26 +12,27 @@
 
     :Code: mature
     :Documentation: mature
+    :tests: 100 % coverage
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage:
-        >>> from openalea.plantik.simulation.simulation import *
+        >>> from vplants.plantik.simulation.simulation import *
 
 .. testsetup::
 
-    from openalea.plantik.simulation.simulation import *
+    from vplants.plantik.simulation.simulation import *
 
 """
 
 import datetime
-from openalea.plantik.simulation.calendar import Calendar, Events, Event
+from vplants.plantik.simulation.calendar import Calendar, Events, Event
 
 
 class SimulationInterface(object):
     """An abstract base class to design simulations.
 
-    This class put together a :class:`~openalea.plantik.simulation.calendar.Calendar`
-    class and a list of events :class:`~openalea.plantik.simulation.calendar.Events`
+    This class put together a :class:`~vplants.plantik.simulation.calendar.Calendar`
+    class and a list of events :class:`~vplants.plantik.simulation.calendar.Events`
     to ease management of simulations.
 
     :param dt: the time step in days (default is 1
@@ -42,8 +43,8 @@ class SimulationInterface(object):
     :type ending_date: float or integer
 
     :attributes:
-        * :attr:`calendar` is an instance of :class:`~openalea.plantik.simulation.calendar.Calendar`
-        * :attr:`events` is an instance of :class:`~openalea.plantik.simulation.calendar.Events`
+        * :attr:`calendar` is an instance of :class:`~vplants.plantik.simulation.calendar.Calendar`
+        * :attr:`events` is an instance of :class:`~vplants.plantik.simulation.calendar.Events`
         * :attr:`date` is an instance of :class:`datetime.datetime` (alias
           to calendar.date) and is read-only.
         * :attr:`time_elapsed` is an instance of :class:`datetime.timedelta` and is
@@ -53,7 +54,7 @@ class SimulationInterface(object):
 
     ::
 
-        >>> from openalea.plantik.simulation.simulation import SimulationInterface
+        >>> from vplants.plantik.simulation.simulation import SimulationInterface
         >>> sim = SimulationInterface(dt=10)
         >>> sim.calendar.date.year
         2000
@@ -152,7 +153,7 @@ class SimulationInterface(object):
 
         All events have a starting date and a duration. When the calendar advance,
         we must check whether any events englobe the current time. If so, its `active`
-        status is set to True. See :class:`~openalea.plantik.simulation.calendar.Event`
+        status is set to True. See :class:`~vplants.plantik.simulation.calendar.Event`
         class for details.
 
         :returns: True if we switched to a new year while advancing current time by `dt`.
@@ -172,7 +173,7 @@ class Simulation(SimulationInterface):
     Simulation is a specialised form of :class:`SimulationInterface`. See
     :class:`SimulationInterface` for the basic usage.
 
-    Constructor is the same constructor as :class:`~openalea.plantik.simulation.simulation.SimulationInterface` for the time being.
+    Constructor is the same constructor as :class:`~vplants.plantik.simulation.simulation.SimulationInterface` for the time being.
     """
     def __init__(self, dt=1, starting_date=2000., ending_date=2010):
         SimulationInterface.__init__(self, dt=dt, starting_date=starting_date,

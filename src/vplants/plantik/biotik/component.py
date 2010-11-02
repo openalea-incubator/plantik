@@ -4,6 +4,7 @@
 
 .. module:: components
     :synopsis: Abstract base class to all biological components
+.. currentmodule:: openalea.plantik.biotik.component
 
 .. topic:: component.py status
 
@@ -13,13 +14,13 @@
     :Documentation: mature
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
-    :Usage: >>> from openalea.plantik.biotik.component import *
+    :Usage: >>> from vplants.plantik.biotik.component import *
 
 .. testsetup:: *
 
-    from openalea.plantik.biotik.component import ComponentInterface
+    from vplants.plantik.biotik.component import ComponentInterface
 """
-from openalea.plantik.tools import misc
+from vplants.plantik.tools import misc
 import datetime
 
 

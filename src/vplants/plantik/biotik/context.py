@@ -10,7 +10,8 @@
     context definition
 
     :Code: mature
-    :Documentation: mature
+    :Documentation: completed
+    :Tests: 100% coverage
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage: >>> from openalea.plantik.biotik.context import *
@@ -22,11 +23,13 @@
 
 
 
+
 class Context(object):
     """Simple structure to store topological information
 
-    see the contuctor for more information
 
+    :Example:
+    
     >>> c = Context()
     >>> assert c.order == None
     >>> c.order = 3
@@ -37,9 +40,9 @@ class Context(object):
         """**Context constructor**
 
         :attributes:
-            * :attr:`order`
-            * :attr:`height`
-            * :attr:`rank`
+            * :attr:`order` read/write
+            * :attr:`height` read/write
+            * :attr:`rank` read/write
         """
         self._rank = rank
         self._height = height
@@ -48,17 +51,17 @@ class Context(object):
     def __str__(self):
         res =  '\nContext\n'
         res += '=======\n'
-        res += ' - rank=%s\n' % self.rank
-        res += ' - height=%s\n' % self.height
-        res += ' - order=%s\n' % self.order
+        res += ' - rank     = %s\n' % self.rank
+        res += ' - height   = %s\n' % self.height
+        res += ' - order    = %s\n' % self.order
         return res
-
 
     def _set_height(self, height):
         self._height = height
     def _get_height(self):
         return self._height
-    height = property(_get_height, _set_height, None, "getter/setter for height")
+    height = property(_get_height, _set_height, None, 
+                      "getter/setter for height")
 
     def _set_order(self, order):
         self._order = order
@@ -72,4 +75,5 @@ class Context(object):
         return self._rank
     rank = property(_get_rank, _set_rank, None, "getter/setter for rank")
 
-
+    
+    

@@ -3,14 +3,15 @@
 """convex module
 
 .. module:: convex
-    :synopsis: tools related to convex hull enveloppe
+    :synopsis: tools related to convex hull envelope
 
 .. topic:: summary
 
-    Tools related to convex hull enveloppe
+    Tools related to convex hull envelope
 
-    :Code: mature
-    :Documentation: mature
+    :Code: mature but could be improved to be more generic
+    :Documentation: up-to-date
+    :Tests: 100% 
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :References: pgl_utils
@@ -20,51 +21,9 @@
 
     from openalea.plantik.tools.convex import *
 """
-
 import openalea.plantgl.all as pgl
+from vplants.plantik.tools.colors import Green
 
-
-
-def gradient( intense ):
-    """ 
-
-    .. todo:: move to colors.py
-    """
-    gradient=[]
-    gradient.append( color( 47,255,0, trans=True ) )
-    gradient.append( color( 115,255,0, trans=True ) )
-    gradient.append( color( 187,255,0, trans=True ) )
-    gradient.append( color( 255,255,0, trans=True ) )
-    gradient.append( color( 255,204,0, trans=True ) )
-    gradient.append( color( 255,162,0, trans=True ) )
-    gradient.append( color( 255,95,0, trans=True ) )
-    gradient.append( color( 255,0,0, trans=True ) )
-    return gradient[ intense ]
-
-
-def color( r, g, b , trans=False, name='material', diffu = 1):
-    """alias to create color Material
-
-    .. todo:: Move to colors.py
-    """
-    c=pgl.Color3( r,g,b )
-    diffuse=diffu
-    specular=pgl.Color3(40,40,40)
-    emission=pgl.Color3(0,0,0)
-    shininess=0
-    if trans:
-        transparency=0.5
-    else:
-       transparency=0
-    return pgl.Material( name, c, diffuse, specular, emission, shininess, transparency )
-
-
-
-
-transGreen = color( 0, 255, 0, True, 'transGreen' )
-Green = color( 0, 100, 0, False, 'Green', diffu=2 )
-TestColor = color( 180, 200,240, False, 'Green', diffu=3 )
-niceGreen = color( 0, 50, 0, False, 'Green', diffu=3 )
 
 def get_leaves_from_scene(scene):
     """parse a scene and extract the leaves.
@@ -76,7 +35,6 @@ def get_leaves_from_scene(scene):
     where leaves are bezierPatch types.
 
     .. todo:: improve the code to be more robust and generic.
-
 
     """
     shapes = []
@@ -128,7 +86,7 @@ def totalSurface(scene):
     :param Scene scene: a PGL scene with shapes
     :return: the total surface area 
 
-    .. todo:: which units ? """
+    .. todo:: what are the units ? """
     sum = 0
     for i in scene:
         sum += pgl.surface(i.geometry)

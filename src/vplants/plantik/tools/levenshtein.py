@@ -11,6 +11,7 @@
 
     :Code: mature
     :Documentation: mature
+    :test: 100%
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage:

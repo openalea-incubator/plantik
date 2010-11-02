@@ -1,126 +1,162 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-"""Internode module
+"""
 
 .. module:: internode
     :synopsis: Internode utilities and classes
+.. currentmodule:: openalea.plantik.biotik.internode
 
 .. topic:: summary
 
     Internode utilities and classes
 
     :Code: mature
-    :Documentation: mature
+    :Documentation: completed
+    :Tests: 100% coverage
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id: growthunit.py 9458 2010-08-30 05:55:55Z cokelaer $
     :Usage:
-        >>> from openalea.plantik.biotik.internode import *
+        >>> from vplants.plantik.biotik.internode import *
 
 .. testsetup::
 
-    from openalea.plantik.biotik.internode import *
+    from vplants.plantik.biotik.internode import *
 
 """
-from openalea.plantik.biotik.component import *
-from openalea.plantik.biotik.collection import CollectionVariables, SingleVariable
-from openalea.plantik.biotik.context import Context
-from openalea.plantik.biotik.growth import GrowthFunction
+from vplants.plantik.biotik.component import *
+from vplants.plantik.biotik.collection import CollectionVariables, SingleVariable
+from vplants.plantik.biotik.context import Context
+from vplants.plantik.biotik.growth import GrowthFunction
 from math import pi
-from openalea.plantik.tools.misc import title
+from vplants.plantik.tools.misc import title
 
 
 class Internode(ComponentInterface):
-    """Internode class
-
-    Specialised version of :class:`~openalea.plantik.biotik.component.ComponentInterface`
-    dedicated to Internodes.
-
-    .. warning:: 
-
-        If the parameter store_data is True, then the :attr:`variables` attributes will store 
-        the length, radius and age at each time step, which may be costly. It is set to false by
-        default.
-
+    r"""Internode. Specialised version of :class:`~openalea.plantik.biotik.component.ComponentInterface`
+    
     :Example:
 
-    >>> from openalea.plantik.biotik.internode import *
-    >>> i = Internode(store_data=True)
+    >>> from vplants.plantik.biotik.internode import *
+    >>> i = Internode(store_data=True, growth_rate=1)
     >>> i.radius
     0.001
-    >>> i.variables.radius.values
-    [0.001]
 
+    Use the :meth:`update` to increment the age of a component. This method
+    will take care of updating relevant properties such as the internode length. 
 
     :plotting:
 
-    If the store_data is True, the you can plot results either from the class instance :meth:`plot`
-    of from the variables stored in :attr:`variables`. The former being less flexible with only `plot` of
-    radius versus age, length versus age, length versus radius. And the latter provides plot of variable
-    versus age (the same as before) as well as histograms.
+    If the argument store_data is set to True, attributes such as length are
+    stored over time in the :attr:`variables`, which you can plot using either 
+    the :meth:`plot` method or from the variables stored in :attr:`variables`. 
+    
+    .. seealso:: :mod:`~openalea.plantik.biotik.collection` module
 
+    :Notation:
 
-    .. todo:: this doc. explaine the growthFunction ?
+    * the age of the internode is denoted :math:`t_a`
 
-    .. todo:: radius_min, length_max and min must be parameters of the constructor. 
+    .. csv-table:: **Notation related to** :class:`~openalea.plantik.biotik.internode.Internode`
+        :header: Name, symbol, default value
+        :widths: 15,20,20
+        
+        radius_min          , :math:`r^{(i)}_{min}`       , 0.001 meters
+        radius              , :math:`r^{(i)}`             , output
+        radius target       , :math:`r^{(i)}_{target}`    , internal
+        final length        , :math:`l^{(i)}`             , user input
+        length              , :math:`l^{(i)}`             , output
+        length_min          , :math:`l^{(i)}_{min}`       , 0.001 meters
+        length_max          , :math:`l^{(i)}_{max}`       , 0.03 meters
+        maturation          , :math:`T^{(i)}_m`           , 10 days
+        growth rate         , :math:`\lambda^{(i)}`       , 1
+        nu (logistic)       , :math:`\nu^{(i)}`           , 1
+        cambial fraction    , :math:`p_c`                 , 0 %
+        volume              , :math:`V^{(i)}`             , output
+        density             , :math:`\rho^{(i)}`          , internal
+        mass                , :math:`m^{(i)}`             , output
+     
     """
-    radius_min = 0.001
-    length_max = 0.03
-    length_min = 0.001
-    cost_per_metamer = 1./(radius_min*radius_min*length_max * pi)
-    volume_standard = 3.14159 * radius_min**2 * length_max
-    def __init__(self, length_max=length_max,
+    
+    
+    
+    def __init__(self, final_length=0.03, length_max=0.03, length_min=0.001, 
                  cambial_fraction=0., birthdate=None,
-                 id=None, maturation=10,
-                 growth_rate=0.5, growth_function='logistic', store_data=False):
-        """**Constructor**
+                 id=None, maturation=10, radius_min=0.001,
+                 growth_rate=1, growth_function='logistic', store_data=False,
+                 nu=1):
+        r"""**Constructor**
 
-        :param float length_max:
-        :param float cambial_fraction:
+
+        :param float final_length: final length :math:`l^{(i)_{\rm{final}}}`
+        :param float length_max: maximum internode length, :math:`l^{(i)}_{max}` (default is 3cm)
+        :param float length_min: maximum internode length, :math:`l^{(i)}_{min}` (default is 0.1cm)
+        :param float cambial_fraction: :math:`p_c` (default is 0.) 
         :param datetime.datetime birthdate:
         :param int id:
-        :param float min_radius: in meters
-        :param int store_data:
-        :param float maturation:
-        :param float growth_rate:
-        :param str growth_function: linear or logistic
+        :param float maturation: :math:`T^{(i)}_m` (default is 10) 
+        :param float radius_min: starting radius of an internode, :math:`r^{(i)}_{min}` (in meters) (default is 0.001)        
+        :param str growth_function: linear or logistic (default is logistic) 
+        :param float growth_rate: :math:`\lambda` (default is 1)
+        :param float nu: :math:`\nu^{(i)}` parameter of the logistic function (default is 1)
+        :param int store_data: store length, radius, demand at each time step (default is False)
 
+        .. note:: the growth function is logistic by default, which is identical 
+            to a sigmoid function isnce :math:`\nu=1` and :math:`\lambda=1`.
+            
+        
         :attributes:
-            * :attr:`length`: total length
-            * :attr:`radius`:  radius of the internode (supposed the same from base to top)
+            * :attr:`length`: internode length
+            * :attr:`radius`:  internode radius (supposed the same from base to top)
             * :attr:`target_radius`:  at each time step, a pipe model may be computed indicating what the new radius should be.
-            *  those inherited by :class:`~openalea.plantik.biotik.component.ComponentInterface`: 
-            * :attr:`age`, :attr:`demand`, :attr:`birthdate`, ...
+            *  those inherited by :class:`~vplants.plantik.biotik.component.ComponentInterface`: 
+                * :attr:`age`
+                * :attr:`demand`
+                * :attr:`birthdate`, ...
             * :attr:`mass`
             * :attr:`volume`
-
-        .. todo:: cambial fraction, possible other parameters: wood density
-
+    
         """
-        self.context = Context()
-        ComponentInterface.__init__(self, label='Internode', birthdate=birthdate, id=id)
+        self.radius_min = radius_min
+        self.length_max = length_max
+        self.length_min = length_min
+        self.final_length = final_length
 
-        self._radius = Internode.radius_min
-        self._target_radius= Internode.radius_min
-        self._length = GrowthFunction(Internode.length_min,
-                                     length_max,
+        self.volume_standard = 3.14159 * self.radius_min**2 * self.length_max
+        self.cost_per_metamer = 1./(self.radius_min*self.radius_min
+                                    *self.length_max * pi)
+        
+        self.context = Context()
+        ComponentInterface.__init__(self, label='Internode', 
+                                    birthdate=birthdate, id=id)
+
+        self._radius = self.radius_min
+        self._target_radius = self.radius_min
+        self._length = GrowthFunction(self.length_min,
+                                     self.final_length,
                                      maturation=maturation,
-                                     growth_rate=growth_rate,
+                                     growth_rate=growth_rate, nu=nu,
                                      growth_function=growth_function)
 
         self.store_data = store_data
 
         self.variables = CollectionVariables()
-        self.variables.add(SingleVariable(name='age', unit='days', values=[self.age.days]))
-        self.variables.add(SingleVariable(name='length', unit='meters', values=[self.length]))
-        self.variables.add(SingleVariable(name='radius', unit='meters', values=[self.radius]))
-        #self.variables.add(SingleVariable(name='demand', unit='biomass unit', values=[self.demand]))
-        self.variables.add(SingleVariable(name='living_cost', unit='biomass unit', values=[self.livingcost]))
+        self.variables.add(SingleVariable(name='age', unit='days', 
+                                          values=[self.age.days]))
+        self.variables.add(SingleVariable(name='length', unit='meters', 
+                                          values=[self.length]))
+        self.variables.add(SingleVariable(name='radius', unit='meters', 
+                                          values=[self.radius]))
+        #self.variables.add(SingleVariable(name='demand', 
+        #    unit='biomass unit', values=[self.demand]))
+        self.variables.add(SingleVariable(name='living_cost', 
+                                          unit='biomass unit', 
+                                          values=[self.livingcost]))
 
         self.demand_coeff = 0.
         self.density = 1.
-        #self.growing = True
-        assert cambial_fraction<=1 and cambial_fraction>=0
-        self._mu = cambial_fraction  # % of cambial layer
+        
+        assert cambial_fraction <= 1 and cambial_fraction >= 0
+        self._mu = cambial_fraction  # % of cambial layer alive
 
     def __str__(self):
         res = super(Internode, self).__str__()
@@ -132,45 +168,54 @@ class Internode(ComponentInterface):
     def resourceCalculation(self):
         """No resource in an internode. 
 
-        returns 0. and set the resource to 0.
+        For now, it is not used (r=0)
         """
         self.resource = 0.
         return self.resource
 
     def demandCalculation(self, **kargs):
-        """ calculate demand as a function of dV
+        """demand of the internode
 
-        At each step iteration, there is a need for resources to build up a new
-        cambial layer.
+        For now, this is not used (i.e., d=0)
         """
-        self.demand = self.volume * self.demand_coeff  #TODO good dimension volume versus coeff
+        #demand_coeff is zero, so d=0
+        self.demand = self.volume * self.demand_coeff  
         return self.demand
 
     def _getVolume(self):
-        return pi * self.radius * self.radius * self.length
-    volume = property(_getVolume, None, None, doc="""returns the internode volume
+        """Returns total internode volume
 
         .. math::
 
-            \pi r^2 \\times l
-
-        returns the internode volume
-        """)
-
+            \pi r^2 \\times l^{(i)}
+        """        
+        return pi * self.radius * self.radius * self.length
+    volume = property(_getVolume, None, None)
+    
     def _getdVolume(self):
-        return pi * (self._target_radius * self._target_radius - self.radius * self.radius) * self.length
-    dvolume = property(_getdVolume, None, None, doc="""
-        returns dv  
-
+        r"""Retuns the volume that is not yet built 
+        
+        .. seealso:: :attr:`target_radius`
+        
         .. math::
     
-            \pi r_{\\rm{target}}^2 * l - \pi r^2 * l
-        .. todo:: this doc explaine the target_radius""")
-
+            dV = \pi l^{(i)} \left( r_{\rm{target}}^2  -  r^2  \right)
+        
+        """
+        return pi * (self._target_radius * self._target_radius - 
+                     self.radius * self.radius) * self.length
+    dvolume = property(_getdVolume, None, None)
 
     def _getMass(self):
+        r"""returns the mass of the internode
+        
+        .. math:: 
+        
+            m^{(i)} = V^{(i)}  \rho^{(i)}
+            
+        """
         return self.density * self.volume
-    mass = property(_getMass, None, None, doc="returns the internode mass")
+    mass = property(_getMass, None, None)
 
     def _getRadius(self):
         return self._radius
@@ -178,30 +223,48 @@ class Internode(ComponentInterface):
         if radius< self._radius:
             raise ValueError("radius decreased in internode !!")
         self._radius = radius
-    radius = property(_getRadius, _setRadius, None, doc="radius")
+    radius = property(_getRadius, _setRadius, None, doc="internode radius. Cannot decrease !")
     
     def _getTargetRadius(self):
         return self._target_radius
     def _setTargetRadius(self, target_radius):
         self._target_radius = target_radius
-    target_radius = property(_getTargetRadius, _setTargetRadius, None, doc="""
-        .. todo:: target radius explaination""")
+    target_radius = property(_getTargetRadius, _setTargetRadius, None, doc=r"""
+    Target radius :math:`r_{\rm{target}}` that the internode tend to reach
+    
+    This is used by the pipe model.
+    
+    
+    """)
 
 
     def _getLength(self):
         return self._length.growthValue(self.age.days)
-    length = property(_getLength, None, None, doc="length")
-
+    length = property(_getLength, None, None, 
+                      doc="internode length :math:`l^{(i)}`")
 
     def update(self, dt):
-        """
-        :param float dt: delta time to update 
-        .. todo:: 
+        """Update function
 
-        if maturation is reached, no need to store more length
+        This update function performs the following tasks:
+
+        #. increment age by dt
+        #. calls :meth:`demandCalculation`, :meth:`resourceCalculation` and 
+           :meth:`computeLivingCost`
+        #. store age :attr:`variables`
+        #. store length in :attr:`variables`
+        #. store radius in :attr:`variables`
+        
+
+        :param float dt: 
+
+        .. note:: when maturation is reached, length is not stored any more
         """
+
         super(Internode, self).update(dt)
         self._compute_livingcost(dt)
+        self.demandCalculation()
+        self.resourceCalculation()
         if self.store_data is True:
             self.variables.age.append(self.age.days)
             # once maturation is reached, there is not point is storing the 
@@ -222,14 +285,30 @@ class Internode(ComponentInterface):
         where `\mu` is a fraction of R
         """
         self.livingcost = self.volume * self._mu * (2. - self._mu)
-        self.livingcost *= Internode.cost_per_metamer * dt
+        self.livingcost *= self.cost_per_metamer * dt
 
 
-    def plot(self, variables=['radius', 'length', 'living_cost'], show=True, grid=True, **args):
-        """plot some results
+    def plot(self, variables=['radius', 'length', 'living_cost'], 
+             show=True, grid=True, **args):
+        """plot radius, length and living cost over time
 
         :param list variables: plot results related to the variables provided
         :param bool show: create but do not show the plot (useful for test, saving)
         :param  args: any parameters that pylab.plot would accept.
+        
+        
+        .. plot:: 
+            :include-source:
+            
+            from pylab import *
+            from vplants.plantik.biotik.internode import Internode
+            i = Internode(store_data=True)
+            for v in range(1,30):
+                i.update(1)
+            i.plot('length')
+            
+        .. note:: Although, the iteration went over 30 days, the plot shows only 10
+            days because the internode reaced maturity after 10 days. 
         """
         self.variables.plot(variables=variables, show=show, grid=grid, **args)
+
