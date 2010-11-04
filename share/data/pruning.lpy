@@ -8,7 +8,7 @@ from openalea.fractalysis.light.directLight import diffuseInterception
 from openalea.plantgl.all import Sphere, Viewer, Box, Vector3
 
 from openalea.plantik.simulation.simulation import Simulation
-from openalea.plantik.tools.config import ReadConfigFile
+from openalea.plantik.tools.config import ConfigParams
 
 import openalea.plantik.biotik.root as root; reload(root)
 import openalea.plantik.biotik.internode; reload(openalea.plantik.biotik.internode)
@@ -42,7 +42,7 @@ RATIO = 50.
 colors = Colors()
 
 from openalea.plantik import get_shared_data
-options = ReadConfigFile(get_shared_data('pruning.ini'))
+options = ConfigParams(get_shared_data('pruning.ini'))
 
 stride_nb = options.geometry.leaf_stride_number
 leaf_surface = leafSurface(int(stride_nb), int(stride_nb))
@@ -54,7 +54,7 @@ Viewer.frameGL.setBgColor(int(bg[0]), int(bg[1]), int(bg[2]))
 Viewer.grids.setXYPlane(options.viewer.xygrid)
 Viewer.grids.setYZPlane(options.viewer.yzgrid)
 Viewer.grids.setXZPlane(options.viewer.xzgrid)
-Viewer.light.position = Vector3(0,0, -100)
+Viewer.light.position = Vector3(5,5, 10)
 
 # create calendar instance      
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
@@ -88,7 +88,7 @@ def Start():
   plant.options.context.age_coeff = options.context.age_coeff
   plant.options.context.height_coeff = options.context.height_coeff
   plant.options.context.vigor_coeff = options.context.vigor_coeff
-
+  plant.options.leaf.resource = options.leaf.resource
 
   allocation = Allocation(options.allocation.model, 
                           simulation.calendar.dt.days, 
@@ -111,7 +111,7 @@ def EndEach(lstring,scene):
     End(lstring, scene)
 
   if options.general.verbose and options.general.fast!=True:
-    print simulation.date, getIterationNb()
+    print simulation.date, getIterationNb(), len(lstring)
     
 
   global RESERVE
@@ -126,7 +126,7 @@ def EndEach(lstring,scene):
     # update
     mtg = axialtree2mtg(lstring, scales, None, parameters)
     plant.mtgtools.mtg = mtg
-    plant.update(simulation.time_elapsed.days, lstring, fast=True, dvmin=0.0)
+    plant.update(simulation.time_elapsed.days, lstring, fast=False)
     #plant.mtg = 
 
     # compute allocated resources according to the individual demand (proportional model)
@@ -292,7 +292,7 @@ def End(lstring, scene):
 
 #place this "SetColor(7) @Gc: before B for an extruded version
 
-Axiom: P(plant)  B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data, growth_threshold=options.apex.growth_threshold))
+Axiom: P(plant)  B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data, growth_threshold=options.apex.growth_threshold, vigor=1))
 
 derivation length: int(options.general.max_step)
 
@@ -333,14 +333,15 @@ A(a):
     a.current_plastochron = dt
     
   
-  if a.allocated > a.demand:
-    a.vigor +=0.1
+  #if a.allocated > a.demand:
+  if a.allocated > options.apex.growth_threshold:
+    a.vigor +=0.05
     if a.vigor>=1:
       a.vigor=1.
   else:
-    a.vigor-=0.1
+    a.vigor-=0.05
     if a.vigor<=0:
-      a.vigor=0.1
+      a.vigor=0.05
   
   
   # since we have reached plastochron, we check if there is enough allocated R
@@ -351,21 +352,22 @@ A(a):
     a.growing = False
     produce A(a)
   else:
-    demand = 0.33
+    demand = options.apex.demand
     allocation = min(1, a.allocated)
     a.allocated -= allocation
     vigor = max(min(1,a.allocated),0.1)
-    
-    
+    vigor = 0.25
     # Create new internode, leaf and apex 
     # First, the internode with the internode's length 
     # the default internode's radius is use to compute the length of this internode given the growth_threshold/allocated resources.
-    length=allocation/Internode.cost_per_metamer/pi/Internode.radius_min/Internode.radius_min
+    cost_per_metamer = 1./(options.internode.radius_min*options.internode.radius_min*options.internode.length_max * pi)
+
+    length=allocation/cost_per_metamer/pi/options.internode.radius_min/options.internode.radius_min
     #print a.allocated, allocation, length, Internode.cost_per_metamer
     # update distance in meters from the root
-    a.height+=min(0.03, length)
+    a.height+=min(options.internode.length_max, length)
     internode_args = {
-      'length_max': length,
+      'final_length': length,
       'cambial_fraction':options.internode.cambial_fraction,
       'birthdate':simulation.calendar.date,
       'store_data':options.internode.store_data,
@@ -385,11 +387,13 @@ A(a):
       'resource_per_day':options.leaf.resource,
       'maturation':options.leaf.maturation,
       'growth_function':options.leaf.growth_function,
+      'growth_rate':options.leaf.growth_rate,
       'efficiency_method':options.leaf.efficiency_method,
-      'internode_vigor': length/Internode.length_max,
+      'internode_vigor': (length-0.0001)/options.internode.length_max,
       'birthdate':simulation.calendar.date,
       'store_data':options.leaf.store_data,
-      'nu':0.5
+      'nu':1,
+      'angle':0
       }
       
     branch_args = {
@@ -403,7 +407,11 @@ A(a):
     # the first apex is has interruption = 0 at the beginnin of the simulation
     # since the axiom is BUA, we do not want to redo BU in that particular case
     if a.internodes_created == 0 and a.context.order!=0 and a.context.height!=1:
-        nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
+        if a.context.order == 1 and simulation.time_elapsed.days<-100:
+          print 'automatic pruning'
+        else:
+          branch_args['angle'] = options.geometry.branching_angle
+          nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
     else:
         # else, if the apex has already grown but has stopped, we only want to add a U
         # if time of interruption > latency
@@ -416,10 +424,14 @@ A(a):
       
       
       
-    if options.geometry.symmetric_tree:
-        nproduce I(Internode(**internode_args)) [L(Leaf(**leaf_args))] [&(options.geometry.branching_angle)  A(Apex(**apex_args))][&(-options.geometry.branching_angle)  A(Apex(**apex_args))]
+    if a.context.order == 1 and simulation.time_elapsed.days<-100:
+        pass
     else:
-        nproduce I(Internode(**internode_args)) [L(Leaf(**leaf_args))] [&(options.geometry.branching_angle)  A(Apex(**apex_args))]
+        nproduce I(Internode(**internode_args))
+        nbaxes = options.geometry.nbaxes
+        for i in range(nbaxes):
+            leaf_args['angle'] = (360.*i/nbaxes)
+            nproduce [L(Leaf(**leaf_args))] [A(Apex(**apex_args))]
     
     # keep track of the fact that this apex is growing.
     a.internodes_created += 1  
@@ -448,7 +460,14 @@ I(i):
   if options.pruning.method == 'box':
     produce ?P(0,0,0)I(i)
   else:
-    produce I(i)
+    if options.pruning.method == 'trunk':
+      if i.context.order==0 and i.context.height >options.pruning.trunk_height and \
+        simulation.time_elapsed.days == options.pruning.trunk_time:
+          produce I(i)Cut()
+      else:
+          produce I(i)
+    else:
+      produce I(i)
   
 L(l):
   l.update(simulation.calendar.dt.days)
@@ -494,14 +513,14 @@ A(a):
     elif options.general.colorcode=='allocated':
       colorcode = 10 + int(a.allocated/a.initial_demand*10.)
     elif options.general.colorcode=='vigor':
-      colorcode = 10 + int(a.vigor*10.)
+      colorcode = 11 + int(a.vigor*10.)
     elif options.general.colorcode=='length':
       colorcode = 5
     elif options.general.colorcode=='test':
       colorcode=5
     else:
       raise ValueError('colorcode in config.ini must be in normal, order')
-    produce SetColor(colorcode) +(90)  f(options.geometry.radius_scale*a.father_radius*RATIO+a.radius) +(-90)    Sphere(max(0.4, a.allocated)/300. * RATIO) 
+    produce SetColor(colorcode) +(90)  f(options.geometry.radius_scale*a.father_radius*RATIO+a.radius) +(-90)    Sphere(max(0.4, a.allocated)/300. * RATIO) f(.4)  f(-.4)
     #Label('   ' +str(
 I(i):
   
@@ -577,13 +596,15 @@ L(c):
         phi = 0
         from openalea.plantgl.all import Shape
         
-        produce  SetColor(2) +(theta)^(phi) SetWidth(options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*RATIO*options.geometry.radius_scale) F(options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) SetColor(color) TextureScale(1, 1)  PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
+        
+        ratio = c.area /c.area_max
+        produce  \(c.angle) SetColor(2) +(theta)^(phi) SetWidth(ratio * options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*RATIO*options.geometry.radius_scale) F(ratio*options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) SetColor(color) TextureScale(1, 1)  PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
           #produce SetColor(color)+(60) RollToVert()      -(60) +(branching_angle)
 
 B(b):
     if options.geometry.branch_view:
         # this is to prevent F to have different base and top radius
-        nproduce SetWidth(b.radius*RATIO*options.geometry.radius_scale)
+        nproduce &(b.angle) SetWidth(b.radius*RATIO*options.geometry.radius_scale)
         nproduce SetColor(12) F(1, b.radius*RATIO*options.geometry.radius_scale)
 
 U(u):
@@ -591,7 +612,7 @@ U(u):
         nproduce SetColor(3)F(.5, u.radius*RATIO*options.geometry.radius_scale)
     
 P(p):
-    if options.pruning.method == 'box':
+    if options.pruning.method == 'box' and options.pruning.box == True:
         from openalea.plantgl.all import Box
         x = options.pruning.max_x * 1.2
         y = options.pruning.max_y * 1.2
@@ -622,14 +643,14 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_219980024 = pgl.ImageTexture("PGL_219980024" , "./wood_1yo_texture.png" , )
-	PGL_219980024.name = "PGL_219980024"
-	Color_7 = pgl.Texture2D(image = PGL_219980024 , )
+	PGL_209150144 = pgl.ImageTexture("PGL_209150144" , "./wood_1yo_texture.png" , )
+	PGL_209150144.name = "PGL_209150144"
+	Color_7 = pgl.Texture2D(image = PGL_209150144 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_214728096 = pgl.ImageTexture("PGL_214728096" , "./apple_leaf_texture_4.png" , )
-	PGL_214728096.name = "PGL_214728096"
-	Color_8 = pgl.Texture2D(image = PGL_214728096 , )
+	PGL_216008360 = pgl.ImageTexture("PGL_216008360" , "./apple_leaf_texture_4.png" , )
+	PGL_216008360.name = "PGL_216008360"
+	Color_8 = pgl.Texture2D(image = PGL_216008360 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
@@ -793,4 +814,5 @@ def __initialiseContext__(context):
 	Color_53.name = "Color_53"
 	context.turtle.setMaterial(53,Color_53)
 	context.options.setSelection('Optimization',2)
+	context.options.setSelection('Module inheritance',1)
 	context.options.setSelection('Selection Always Required',1)
