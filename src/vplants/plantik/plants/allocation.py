@@ -132,22 +132,25 @@ class Allocation():
     def proportional(self):
         r"""Proportional model of allocation.
 
+        This method should be called by :meth:`compute_allocation` only
+
         #. The total resource **R** is provided as an attribute :attr:`R`.
-        #. Compute the total Demand :math:`D(t, \Delta t)` using :meth:`computeTotalDemand()`.
+        #. Compute the total Demand :math:`D(t, \Delta t)` using 
+           :meth:`computeTotalDemand()`.
         #. Compute individual allocation as follows: 
-        #. Update the :attr`allocated` attribute within the lstring and returns total resource allocated.
+        
+        .. math::
+
+            \tilde{d}_v(t, \Delta t)  = \frac{d_v(t, \Delta t)}{D(t, \Delta t)}
+        4. Update :attr:`allocated` attribute within the lstring and returns 
+           total resource allocated denoted :math:`a(t, \Delta t)`.
 
         .. math::
 
             a(t, \Delta t) = \min (\tilde{d}_v (t, \Delta t) R(t), d_{0,v}(t)) \Delta t
 
-        where
 
-        .. math::
-
-             \tilde{d}_v(t, \Delta t)  = \frac{d_v(t, \Delta t)}{D(t, \Delta t)}
-
-        and :math:`d_v(t)` is the demand in unit of biomass per time unit.
+        where :math:`d_v(t)` is the demand in unit of biomass per time unit.
 
         .. todo:: check equations for deltat
         """
