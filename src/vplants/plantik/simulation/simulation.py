@@ -109,8 +109,10 @@ class SimulationInterface(object):
 
         .. note:: this is a static method
 
-        >>> Simulation.convert_fractional_year_to_date(2000.5)
-        datetime.datetime(2000, 7, 1, 12, 0)
+        ::
+
+            Simulation.convert_fractional_year_to_date(2000.5)
+            datetime.datetime(2000, 7, 1, 12, 0)
 
         """
         assert year>=1, "year cannot be less than 1"
