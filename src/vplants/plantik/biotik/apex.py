@@ -292,13 +292,18 @@ class Apex(ComponentInterface):
         allocated = self.variables.allocated.plot(show=False)[0]
         vigor = self.variables.vigor.plot(show=False)[0]
 
-        pylab.plot(height.get_xdata(), height.get_ydata(), marker='o', color='b', label='Height')
+        pylab.plot(height.get_xdata(), height.get_ydata(), marker='o', 
+                   color='b', label='Height')
         pylab.hold(True)
-        pylab.plot(demand.get_xdata(), demand.get_ydata(), marker='o', color='g', label='Demand')
-        pylab.plot(allocated.get_xdata(), allocated.get_ydata(), marker='o', color='r', label='allocated')
-        pylab.plot(vigor.get_xdata(), vigor.get_ydata(), marker='o', color='c', label='vigor')
+        pylab.plot(demand.get_xdata(), demand.get_ydata(), marker='o', 
+                   color='g', label='Demand')
+        pylab.plot(allocated.get_xdata(), allocated.get_ydata(), marker='o', 
+                   color='r', label='allocated')
+        pylab.plot(vigor.get_xdata(), vigor.get_ydata(), marker='o', 
+                   color='c', label='vigor')
         pylab.plot([min(self.variables.age.values), max(self.variables.age.values)], 
-            [self.growth_threshold, self.growth_threshold], color='m', label='threshold')
+            [self.growth_threshold, self.growth_threshold], color='m', 
+            label='threshold')
         pylab.legend()
         if show is True: pylab.show()
 
@@ -312,7 +317,8 @@ class Apex(ComponentInterface):
         return res
 
 
-    def plot_variables(self, variables=['demand', 'allocated'], show=True, grid=True, **args):
+    def plot_variables(self, variables=['demand', 'allocated'],
+                       show=True, grid=True, **args):
         """plot some results
 
         :param list variables: plot results related to the variables provided
