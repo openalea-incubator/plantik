@@ -142,7 +142,7 @@ class Plant(object):
         #: **branches** and growth units (denoted **gus**) at each time step. 
         #For instance, to acces to apices counter::
         #:
-        #: >>> plant.counter.apices.values
+        #: plant.counter.apices.values
         self.counter = CollectionVariables()
         self.counter.add(SingleVariable(name='apices', unit=r'#'))
         self.counter.add(SingleVariable(name='internodes', unit=r'#'))
@@ -273,10 +273,12 @@ class Plant(object):
         pylab.hold(True)
         pylab.plot(T, A/norm, '-.sr',label="Allocation cost")
         pylab.plot(T, R/norm, '-k', linewidth=2, label='Total resource')
-        pylab.plot(T, C/norm, '-D',color='magenta', markerfacecolor=None, markersize=12, label='Total cost')
+        pylab.plot(T, C/norm, '-D',color='magenta', markerfacecolor=None,
+                    markersize=12, label='Total cost')
         pylab.plot(T, pipe/norm, '-og', label='Pipe model cost')
         try:
-            pylab.plot(T, (C+A+pipe)/norm, '-square', markersize=15, label='Total cost + allocation + pipe\_model cost')
+            pylab.plot(T, (C+A+pipe)/norm, '-square', markersize=15, 
+                       label='Total cost + allocation + pipe\_model cost')
         except:
             pass
         pylab.xlabel('Time (days)')
@@ -315,15 +317,20 @@ class Plant(object):
         fig = pylab.figure(num_fig)
         pylab.clf()
 
-        pylab.semilogy(self.time, self.counter.apices.values, label='Apex number')
+        pylab.semilogy(self.time, self.counter.apices.values, 
+                       label='Apex number')
         pylab.hold(True)
-        try:pylab.semilogy(self.time, self.counter.internodes.values, label='Internode number')
+        try:pylab.semilogy(self.time, self.counter.internodes.values, 
+                           label='Internode number')
         except:pass
-        try:pylab.semilogy(self.time, self.counter.leaves.values, label='Leaves number')
+        try:pylab.semilogy(self.time, self.counter.leaves.values, 
+                           label='Leaves number')
         except:pass
-        try:pylab.semilogy(self.time, self.counter.branches.values, label='branches')
+        try:pylab.semilogy(self.time, self.counter.branches.values,
+                            label='branches')
         except:pass
-        try:pylab.semilogy(self.time, self.counter.gus.values, label='gu')
+        try:pylab.semilogy(self.time, self.counter.gus.values, 
+                           label='gu')
         except:pass
         pylab.xlabel('Time (days)')
         pylab.ylabel(r'\#')
@@ -341,22 +348,26 @@ class Plant(object):
         many more plots can be found in :attr:`mtgtools` attribute
         """
         self.plot_counter(num_fig=1, savefig=savefig, show=show)
-        self.plot_DARC(normalised=normalised, show=show, num_fig=2, savefig=savefig)
-        self.plot_PARC(normalised=normalised, show=show, num_fig=3, savefig=savefig)
+        self.plot_DARC(normalised=normalised, show=show, num_fig=2, 
+                       savefig=savefig)
+        self.plot_PARC(normalised=normalised, show=show, num_fig=3, 
+                       savefig=savefig)
 
 
     def update_counter(self, lstring):
         """Parse the lstring attribute and count the number of elements to update the :attr:`counter` attribute.
 
-        .. warning:: you should use the :meth:`update` to call this function. Indeed, if you only call this function,
-            other variables such as the :attr:`time` will not be updated at the same time leading to future errors in 
-            plotting for instance.!!
+        .. warning:: you should use the :meth:`update` to call this function. 
+            Indeed, if you only call this function, other variables such as the
+            :attr:`time` will not be updated at the same time leading to future
+            errors in plotting for instance.!!
 
         """
         #import inspect
         #if inspect.stack()[1][3] != 'update':
         #    import warnings
-        #    warnings.warn('You should not call Plant.update_counter directly but via the update() method. See docstring.')
+        #    warnings.warn('You should not call Plant.update_counter 
+        #    directly but via the update() method. See docstring.')
         self.counter.apices.append(lstring.count('A'))
         self.counter.internodes.append(lstring.count('I'))
         self.counter.leaves.append(lstring.count('L'))
@@ -368,9 +379,10 @@ class Plant(object):
 
         .. todo:: include A in the parametr list.
         
-        .. warning:: you should use the :meth:`update` to call this function. Indeed, if you only call this function,
-            other variables such as the :attr:`time` will not be updated at the same time leading to future errors in 
-            plotting for instance.!!
+        .. warning:: you should use the :meth:`update` to call this function. 
+          Indeed, if you only call this function, other variables such as the
+          :attr:`time` will not be updated at the same time leading to future
+          errors in plotting for instance.!!
         """
         self.DARC.D.append(D)
         self.DARC.R.append(R)
@@ -382,7 +394,8 @@ class Plant(object):
 
         plus the pipe model cost
 
-        :param bool fast: if True, branch_update and growth_update are not called (save about 20% of CPU).
+        :param bool fast: if True, branch_update and growth_update are not 
+            called (save about 20% of CPU).
 
         calls :meth:`update_DARC` and :meth:`update_counter` methods
 
@@ -435,8 +448,8 @@ class Plant(object):
         # second sink is the pipe model ---------------------------------------------------
         self.variables.dV.append(self.dV)
 
-        # let us compute the amount of dv that will be indeed allocated. Given that we want to use
-        # at maximum the amount R*pipe_fraction.
+        # let us compute the amount of dv that will be indeed allocated.
+        # Given that we want to use at maximum the amount R*pipe_fraction.
         dv_a = min(self.R * self.pipe_fraction, self.dV)
         assert dv_a >= 0 and dv_a <= self.R * self.pipe_fraction and dv_a <= self.dV
 
@@ -511,14 +524,16 @@ class Plant(object):
         
         # computes the length
         for vid in gu_ids:
-            length = sum([ self.mtg.property('Internode')[id].length for id in list(self.mtg.components_at_scale(vid,4))
+            length = sum([ self.mtg.property('Internode')[id].length 
+                          for id in list(self.mtg.components_at_scale(vid,4))
                           if self.mtg.class_name(id)=='I'])
             self.mtg.property('GrowthUnit')[vid].length = length
         
         for vid in gu_ids:
             first_id = self.mtg.components_at_scale(vid, scale=4).next()
             if self.mtg.class_name(first_id) == 'I':
-                self.mtg.property('GrowthUnit')[vid].radius = self.mtg.property('Internode')[first_id].radius
+                self.mtg.property('GrowthUnit')[vid].radius = \
+                    self.mtg.property('Internode')[first_id].radius
 
 
 
@@ -553,7 +568,8 @@ class Plant(object):
 
         # calculate the branches total length
         internode_ids = [Components(x,Scale=4) for x in branch_ids]
-        length = [[sum([self.mtg.property('Internode')[id].length for id in y if self.mtg.class_name(id)=='I'])]  for y in internode_ids]
+        length = [[sum([self.mtg.property('Internode')[id].length for id in y 
+                        if self.mtg.class_name(id)=='I'])]  for y in internode_ids]
         for vid,length in zip(branch_ids, length):
             self.mtg.property('Branch')[vid].length = length[0]
 
