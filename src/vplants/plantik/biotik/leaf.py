@@ -81,7 +81,7 @@ class Leaf(ComponentInterface):
                  internode_vigor=1., livingcost=0., 
                  growth_rate=1, area_optimal=30*0.01*0.01,
                  growth_function='sigmoid', efficiency_method='unity', 
-                 store_data=False, nu=1, t1=15, t2=150):
+                 store_data=False, nu=1, t1=15, t2=150, angle=0.):
         """**Constructor**
 
         
@@ -139,7 +139,7 @@ class Leaf(ComponentInterface):
                                    growth_rate=growth_rate,
                                    growth_function=growth_function, nu=nu)
         self._r0 = resource_per_day
-
+        self.angle = angle
 
         # used for bookeeping only
         self.internode_vigor = internode_vigor        # in %
