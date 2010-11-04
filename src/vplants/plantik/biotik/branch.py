@@ -46,7 +46,8 @@ class Branch(GrowthUnit):
     
     .. seealso:: :class:`~openalea.plantik.biotik.growthunit.GrowthUnit`
     """
-    def __init__(self, birthdate=None, id=None, min_radius=0.001, store_data=True):
+    def __init__(self, birthdate=None, id=None, min_radius=0.001, 
+                 store_data=True, angle=0):
         """**Constructor**
 
         :param datetime.datetime birthdate:
@@ -60,10 +61,11 @@ class Branch(GrowthUnit):
         see :class:`~openalea.plantik.biotik.growthunit.GrowthUnit` for details
 
         """
-        GrowthUnit.__init__(self, birthdate=birthdate, id=id, min_radius=min_radius, store_data=store_data)
+        GrowthUnit.__init__(self, birthdate=birthdate, id=id, 
+                            min_radius=min_radius, store_data=store_data)
         self._label = 'Branch' # for the read_only attributes to reset label from GrowtUnit to Branch
         self.growthunit_counter = 0# count number of growth units in this branch
-
+        self.angle = angle
 
     def __str__(self):
         from vplants.plantik.tools.misc import title
