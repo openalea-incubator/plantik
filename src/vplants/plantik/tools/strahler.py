@@ -39,7 +39,7 @@ def strahler_symmetry(mtg):
 
 
 def strahler_order(g, vid):
-    """
+    """internal function used by :func:`strahler`
     
     """
     strahler = {}

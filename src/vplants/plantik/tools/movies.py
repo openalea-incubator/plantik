@@ -43,7 +43,9 @@ def create_movie(input_glob='*.png', output_filename='output', format='avi', wid
 
         mencoder mf://@/tmp/file.txt -mf w=800:h=600:fps:24:type=png -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o output.avi
 
-    >>> create_movie('test*.png', output_filename='movie1', format='avi', fps=20)
+     ::
+
+        create_movie('test*.png', output_filename='movie1', format='avi', fps=20)
 
     .. todo:: for all platforms
     .. todo:: provide more options
@@ -59,7 +61,8 @@ def create_movie(input_glob='*.png', output_filename='output', format='avi', wid
         #tempfile.close()
 
         size = '-mf w=%s:h=%s:fps=%s:type=%s' % (width, height, fps, type)
-        cmd = 'mencoder mf://@%s %s -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o %s' % (tmpfile.name, size, output_filename + '.' + format)
+        cmd = 'mencoder mf://@%s %s -ovc lavc -lavcopts vcodec=msmpeg4:mbd=2:trell -oac copy -o %s'\
+            % (tmpfile.name, size, output_filename + '.' + format)
         status = os.system(cmd)
         tmpfile.close()
 

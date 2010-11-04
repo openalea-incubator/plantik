@@ -371,7 +371,8 @@ class MTGTools(object):
             order = self.mtg.order(id)
             complex = self.mtg.complex(id)
             rank = getrank(self.mtg, id)
-            c.execute("insert into mtg values (?,?,?,?,?,?)", (scale, order, label, rank, id, complex))
+            c.execute("insert into mtg values (?,?,?,?,?,?)", \
+                      (scale, order, label, rank, id, complex))
         conn.commit()
         c.close()
 
@@ -396,10 +397,12 @@ class MTGTools(object):
         if kargs.get("label") == None:
             print "provide a valid label.Labels are %s" % self.parameters.keys()
             return
-        return [getattr(self.mtg.property(self.parameters[label][0])[id], attribute) for id in self.select(**kargs)]
+        return [getattr(self.mtg.property(self.parameters[label][0])[id], 
+                        attribute) for id in self.select(**kargs)]
 
 
-    def select(self, select="id", order=None, label=None, scale=None, rank=None, complex=None):
+    def select(self, select="id", order=None, label=None, scale=None, 
+               rank=None, complex=None):
         """Return ids in the DB that fit the user parameter inputs.
 
         :param label: select node that match this label
@@ -475,7 +478,8 @@ class MTGTools(object):
         """
         from openalea.plantik.biotik import Internode
         ids = self.select(order=order, label="I")
-        return sum([self.mtg.property('Internode')[id].volume for id in ids ])/ Internode.volume_standard
+        return sum([self.mtg.property('Internode')[id].volume 
+                    for id in ids ])/ Internode.volume_standard
 
     def getAreaLeaves(self, order=None):
         """return area leaves given order
@@ -612,7 +616,8 @@ class MTGTools(object):
         return trunk
 
 def branch_rank_on_trunk(g):
-    return [g.property('Branch')[id].context.rank for id in g.components(1) if g.class_name(id) == 'B']
+    return [g.property('Branch')[id].context.rank 
+            for id in g.components(1) if g.class_name(id) == 'B']
 
 
 def convert2LMS(length):
@@ -664,7 +669,8 @@ def create_sequences(g):
     branch_ids = Sons(2)
     branch_length = [g.property('Branch')[id].length for id in Sons(2)]
     branch_rank = [g.property('Branch')[id].context.rank for id in Sons(2)]
-    apices_rank = [g.property('Apex')[id].context.rank for id in g.components_at_scale(2, 4) if Class(id)=='A']
+    apices_rank = [g.property('Apex')[id].context.rank 
+                   for id in g.components_at_scale(2, 4) if Class(id)=='A']
     values = []
     for rank in apices_rank:
         values.append((rank, 0))
@@ -686,7 +692,8 @@ def get_branch_metamer_number_on_trunk(g):
     in each of these branches
 
     to be removed"""
-    length = [len([y for y in Components(x, Scale=4) if Class(y)=='I']) for x in Sons(get_trunk_index(g), EdgeType='+')]
+    length = [len([y for y in Components(x, Scale=4) if Class(y)=='I']) 
+              for x in Sons(get_trunk_index(g), EdgeType='+')]
     return length
 
 def plot(g):

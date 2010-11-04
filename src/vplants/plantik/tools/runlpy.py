@@ -80,14 +80,14 @@ def runlpy(filename='experiment1.lpy', verbose=False, show=True):
         print scales
         print parameters
 
-    scales = {'A':4,'I':4,'L':4, 'B':2,'U':3, 'P':1}
-    assert parameters == {'A': ['Apex'], 
-                          'I': ['Internode'],  
-                          'L': ['Leaf'], 
-                          'P':['Plant'], 
-                          'B':['Branch'], 
-                          'U':['GrowthUnit'], 
-                          'R':[]}
+    #scales = {'A':4,'I':4,'L':4, 'B':2,'U':3, 'P':1}
+    #assert parameters == {'A': ['Apex'], 
+    #                      'I': ['Internode'],  
+    #                      'L': ['Leaf'], 
+    #                      'P':['Plant'], 
+    #                      'B':['Branch'], 
+    #                      'U':['GrowthUnit'], 
+    #                      }
 
     max_step = l.derivationLength
     if verbose:

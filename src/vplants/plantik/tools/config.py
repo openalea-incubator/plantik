@@ -30,31 +30,31 @@ __all__ = ["saveConfigParser", "ConfigParams", "createConfigParserExample"]
 
 def createConfigParserExample():
     """Create a simple example of ConfigParser instance to play with
-    
+
     >>> from openalea.plantik.tools.config import createConfigParserExample
     >>> c = createConfigParserExample()
     >>> assert 'Section1' in c.sections()
     >>> assert 'Section2' in c.sections()
-    
-    This example builds up a ConfigParser instance from scratch. 
-    
+
+    This example builds up a ConfigParser instance from scratch.
+
     This is equivalent to having the following input file::
-    
+
         [Section1]
         int = 15
         bool = true
         float = 3.14159
         baz = fun
         bar = python
-        foo = %(bar)s is %(baz)s!        
-        
+        foo = %(bar)s is %(baz)s!
+
         [Section2]
         test = 1
         booltest = False
         booltest2 = No
 
     and using the read method of ConfigParser as follows::
-    
+
         >>> from ConfigParser import ConfigParser
         >>> config = ConfigParser()
         >>> config.read(filename)
@@ -75,12 +75,12 @@ def createConfigParserExample():
     config.set('Section2', 'booltest', 'False')
     config.set('Section2', 'booltest2', 'No')
     return config
-    
-    
+
+
 def saveConfigParser(filename=None, config=None):
     """Save an existing ConfigParser instance into a file.
 
-    :param str filename: a valid filename 
+    :param str filename: a valid filename
     :param ConfigParser config: the config parser instance to save
 
     >>> config = ConfigParams('config.ini') #doctest: +SKIP
@@ -111,12 +111,12 @@ class _set_section(object):
 
 
 class config_base(object):
-    """A base class that provides common methods to manipulate 
-    :class:`ConfigParser` instances.  
-    
-    
+    """A base class that provides common methods to manipulate
+    :class:`ConfigParser` instances.
+
+
     .. note:: Used by :class:`ConfigParams` and :class:`ConfigParams`
-    
+
     """
     def __init__(self):
         self.config = None
@@ -159,14 +159,15 @@ class config_base(object):
                 except: #string
                     options[option] = self.config.get(section, option)
 
+
         return options
 
 
     def save(self, filename):
         """Save the original ConfigParser instance in  a file.
-        
+
         This function is an alias to :func:`saveConfigParser`
-        
+
         :param str filename: a valid filename
         """
         saveConfigParser(filename, self.config)
@@ -175,20 +176,20 @@ class config_base(object):
 class ConfigParams(config_base):
     """Convert a **ConfigParser** instance into **ConfigParams** object.
 
-    A :class:`~openalea.plantik.tools.config.ConfigParams` object ease the access to sections and options from a 
+    A :class:`~openalea.plantik.tools.config.ConfigParams` object ease the access to sections and options from a
     :class:`~ConfigParser.ConfigParser` instance. This class keeps track of the original
     ConfigParser instance (in the attribute *config*).
 
     In the following example, we first create a ConfigParser instance using
-    the :func:`~openalea.plantik.tools.config.createConfigParserExample`, which 
+    the :func:`~openalea.plantik.tools.config.createConfigParserExample`, which
     is converted using :class:`ConfigParams`::
 
         >>> from openalea.plantik.tools.config import createConfigParserExample
-        >>> config = createConfigParserExample() 
+        >>> config = createConfigParserExample()
         >>> config_params = ConfigParams(config)
-    
+
     Then, we can easily access any of the options as follows::
-    
+
         >>> assert config_params.Section1.int == 15
 
     .. seealso:: *ConfigParams* VisuAlea node :mod:`openalea.plantik.dataflows.config`
@@ -196,12 +197,12 @@ class ConfigParams(config_base):
     """
     def __init__(self, config_or_filename):
         """**Constructor**
-        
+
         :param (ConfigParser,str) config: a ConfigParser instance or a filename
         """
         from ConfigParser import ConfigParser
         config_base.__init__(self)
-        
+
         if type(config_or_filename) == str:
             config = ConfigParser()
             config.read(config_or_filename)
@@ -216,5 +217,5 @@ class ConfigParams(config_base):
         except:
             raise SyntaxError("Could not convert sections from the ConfigParser instance !!")
 
-    
+
 
