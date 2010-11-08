@@ -28,6 +28,9 @@ class Context(object):
     """Simple structure to store topological information
 
 
+    This class allows to store order, height to the root, rank and distance of a lateral apex
+    to the apex on the same axis.
+
     :Example:
     
     >>> c = Context()
@@ -36,17 +39,19 @@ class Context(object):
     >>> assert c.order == 3
 
     """
-    def __init__(self, rank=None, order=None, height=None):
+    def __init__(self, rank=None, order=None, height=None, d2a=None):
         """**Context constructor**
 
         :attributes:
             * :attr:`order` read/write
             * :attr:`height` read/write
             * :attr:`rank` read/write
+            * :attr:`distance_to_apex` read/write
         """
         self._rank = rank
         self._height = height
         self._order = order
+        self._d2a = d2a
 
     def __str__(self):
         res =  '\nContext\n'
@@ -54,6 +59,7 @@ class Context(object):
         res += ' - rank     = %s\n' % self.rank
         res += ' - height   = %s\n' % self.height
         res += ' - order    = %s\n' % self.order
+        res += ' - distance_to_apex    = %s\n' % self.d2a
         return res
 
     def _set_height(self, height):
@@ -74,6 +80,14 @@ class Context(object):
     def _get_rank(self):
         return self._rank
     rank = property(_get_rank, _set_rank, None, "getter/setter for rank")
+
+    
+    
+    def _set_d2a(self, d2a):
+        self._d2a = d2a
+    def _get_d2a(self):
+        return self._d2a
+    d2a = property(_get_d2a, _set_d2a, None, "getter/setter for distance to apex")
 
     
     
