@@ -144,6 +144,8 @@ class Apex(ComponentInterface):
 
         self.lg = 0.
 
+        self.type = 'Apex' #apex or meristem
+
     def _getHeight(self):
         return self._height
     def _setHeight(self, height):
@@ -237,6 +239,7 @@ class Apex(ComponentInterface):
         rank_coeff = kargs.get("rank_coeff", 0)
         age_coeff = kargs.get("age_coeff", 0)
         vigor_coeff = kargs.get("vigor_coeff", 0)
+        d2a_coeff = kargs.get("d2a_coeff", 0)
         context = kargs.get("context", "order_height")
 
         #todo refactoering switch model to context
@@ -246,6 +249,7 @@ class Apex(ComponentInterface):
         order = self.context.order
         height = self.context.height
         rank = self.context.rank
+        d2a = self.context.d2a
 
         if model=="order_height":
             self.demand = self.initial_demand / float(order+1)**order_coeff / float(height)**height_coeff
@@ -254,8 +258,9 @@ class Apex(ComponentInterface):
             self.weight_order = 1./float(order+1)**order_coeff
             self.weight_height = 1./float(height+1)**height_coeff
             self.weight_rank = 1./float(rank+1)**rank_coeff
+            self.weight_d2a = 1./float(d2a+1)**d2a_coeff
             self.weight_age = 1./(1+exp(+(0.03*(self.age.days-90.))))
-            self.demand = self.initial_demand * self.weight_order * self.weight_height * self.weight_rank
+            self.demand = self.initial_demand * self.weight_order * self.weight_height * self.weight_rank * self.weight_d2a
             self.demand *= self.weight_age**age_coeff
             self.demand *= self.vigor**vigor_coeff
 
