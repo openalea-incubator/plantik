@@ -120,6 +120,8 @@ class Internode(ComponentInterface):
         self.length_max = length_max
         self.length_min = length_min
         self.final_length = final_length
+        assert final_length >= length_min, 'final length must be greater or equal to min length'
+        assert length_max>=length_min, 'max length must be greater or equal to min length'
 
         self.volume_standard = 3.14159 * self.radius_min**2 * self.length_max
         self.cost_per_metamer = 1./(self.radius_min*self.radius_min

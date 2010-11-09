@@ -23,6 +23,8 @@
 """
 from openalea.mtg import *
 from openalea.mtg.aml import *
+import openalea.mtg.algo as algo
+
 
 import tempfile
 
@@ -515,8 +517,7 @@ class MTGTools(object):
 
 
         This function parse the whole MTG, extract the rank, order and height and update
-        the context instance of each object. This is used by pruning.lpy, and more precisely,
-        this is used to compute the context weight. 
+        the context instance of each object. This is used by pruning.lpy in plant.update().
 
         .. seealso:: :class:`~openalea.plantik.biotik.context.Context`
 
@@ -532,13 +533,44 @@ class MTGTools(object):
             node = g.node(id)
             if node.scale()>=2:
                 obj = g.property(self.parameters[node.label][0])[id]
-                try:
-                    if obj.context.order == None:
-                        obj.context.rank = rank(g, id)
-                        obj.context.order = order(g, id)
-                        obj.context.height = height(g, id)
-                except:
-                    print "set_order_path_rank failed."
+                obj.context.rank = rank(g, id)
+                obj.context.order = order(g, id)
+                obj.context.order_topo = order(g, id)
+                obj.context.height = height(g, id)
+
+
+
+    def distance_to_apex_and_order_reassignment(self):
+        for bid in self.ids['B']:
+            # the following statement looks for all element of same order as the branch but at scale 4
+            branch_components = list(self.mtg.components_at_scale (bid, scale=4))
+            #print bid, len(branch_components), branch_components
+
+            last_axis_id = list(algo.axis(self.mtg, bid, scale=4))[-1]
+            apices_ids = [x for x in branch_components if self.mtg.class_name(x)=='A']
+            #except:
+            #    print 'try failed'
+            #    break
+
+            # if the last element is an apex, it means we have an unpruned axes
+            if self.mtg.label(last_axis_id) == 'A':
+                pass
+                # if so, we compute the distance between all apices at order 3 with this apices
+
+            #otherwise, we need to reassign order to lateral meristem to get a new apex.
+            else:
+                #get last apex and decrease its order by 1
+                this_id = apices_ids[-1]
+                self.mtg.property('Apex')[this_id].context.order -= 1
+
+            #in all cases, recompute the distance between lateral meristem and apex
+            heights = [algo.alg_height(self.mtg, branch_components[0], x) for x in apices_ids]
+            distances = [abs(x - max(heights)) for x in heights]
+
+            for i, d in zip(apices_ids, distances):
+                #print i, d, self.mtg[i]
+                self.mtg.property('Apex')[i].context.d2a = d
+
 
 
     def get_branch_radius_on_trunk(self):
@@ -553,6 +585,8 @@ class MTGTools(object):
         """return indices of all branches
         
         .. note:: same as self.select(label="B")
+
+        .. warninng:: call createDB or connectDB before usage
         """
         return self.select(label="B")
 

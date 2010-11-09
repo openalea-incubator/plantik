@@ -404,6 +404,7 @@ class Plant(object):
 
 
         self.mtgtools.set_order_path_rank()
+        self.mtgtools.distance_to_apex_and_order_reassignment()
         #reset total demand
         self.D = 0.
         if self.options.misc.reset_resource:
@@ -422,6 +423,7 @@ class Plant(object):
                                     order_coeff=self.options.context.order_coeff,
                                     height_coeff=self.options.context.height_coeff,
                                     rank_coeff=self.options.context.rank_coeff,
+                                    d2a_coeff=self.options.context.d2a_coeff,
                                     vigor_coeff=self.options.context.vigor_coeff,
                                     age_coeff=self.options.context.age_coeff)
                 self.R += elt[0].resourceCalculation()
@@ -530,11 +532,15 @@ class Plant(object):
             self.mtg.property('GrowthUnit')[vid].length = length
         
         for vid in gu_ids:
-            first_id = self.mtg.components_at_scale(vid, scale=4).next()
-            if self.mtg.class_name(first_id) == 'I':
-                self.mtg.property('GrowthUnit')[vid].radius = \
-                    self.mtg.property('Internode')[first_id].radius
-
+            ids = self.mtg.components_at_scale(vid, scale=4)
+            try:
+                first_id = ids.next()
+                if self.mtg.class_name(first_id) == 'I':
+                    self.mtg.property('GrowthUnit')[vid].radius = \
+                        self.mtg.property('Internode')[first_id].radius
+            except:
+                # this GU is probably empty
+                pass
 
 
     def branch_update(self, fast=True):
@@ -575,9 +581,13 @@ class Plant(object):
 
         #compute the branches radius
         for vid in branch_ids:
-            first_id = self.mtg.components_at_scale(vid, scale=4).next()
-            if self.mtg.class_name(first_id) == 'I':
-                self.mtg.property('Branch')[vid].radius = self.mtg.property('Internode')[first_id].radius
+            try:
+                first_id = self.mtg.components_at_scale(vid, scale=4).next()
+                if self.mtg.class_name(first_id) == 'I':
+                    self.mtg.property('Branch')[vid].radius = self.mtg.property('Internode')[first_id].radius
+            except:
+                #this is probably an empty branch
+                pass
             #else:
             #    self.mtg.property('Branch')[vid].radius = 0.
 
