@@ -27,7 +27,13 @@ import vplants.plantgl.all as pgl
 import numpy
 from math import log
 import math
-from scipy.stats import linregress
+try:
+    from scipy.stats import linregress
+    scipystats = True
+
+except:
+    scipystats = False
+    pass
 
 __all__ = ["boxcounting"]
 
@@ -81,6 +87,9 @@ def boxcounting(scene, maxd=10, show=False, library='plantik'):
 
     log_inv_delta = numpy.array([log(1./i) for i in delta])
     log_n_delta = numpy.log(n_delta)
+
+    if scipystats == False:
+        return
 
     slope, itcept, r, ttp, stderr = linregress(log_inv_delta, log_n_delta)
     import pylab
