@@ -20,7 +20,9 @@
 
 """
 from openalea.plantgl.all import Vector3, Vector4, Scaled, BezierPatch
+from vplants.plantik import get_shared_data
 
+__all__ = ['createSurface', 'leafSurface']
 
 def createSurface(filename=None, ustride=10, vstride=10):
     """Reads a surface file and down sample data if required
@@ -100,4 +102,18 @@ def createSurface(filename=None, ustride=10, vstride=10):
     smb = Scaled(size, BezierPatch(ctrlpoints, ustride, vstride))
     smb.name = name
     return smb
+
+
+
+def leafSurface(u_stride=6, v_stride=6):
+    """read leaf_surface.s file and return the surface associated
+
+    :param int u_stride: stride in u direction (default is 6)
+    :param int v_stride: stride in v direction (default is 6)
+
+    >>> leaf = leafSurface(6, 12)
+    """
+    s = createSurface(get_shared_data('leaf_surface.s'), u_stride, v_stride)
+    s.name = 'leaf'
+    return s
 
