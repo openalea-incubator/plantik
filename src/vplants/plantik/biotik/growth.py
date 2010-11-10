@@ -2,7 +2,7 @@
 #-*- coding: utf-8 -*-
 """
 
-.. module:: growth 
+.. module:: growth
     :synopsis: tools related to growth functions
 .. currentmodule:: openalea.plantik.biotik.growth
 
@@ -17,8 +17,8 @@
     :Author: Thomas Cokelaer <Thomas.Cokelaer@sophia.inria.fr>
     :Revision: $Id$
     :Usage: >>> from openalea.plantik.biotik.growth import *
-    
-    
+
+
 .. seealso:: visualea dataflows in :mod:`vplants.plantik.dataflows.growth`
 
 """
@@ -62,8 +62,8 @@ class GrowthFunction(object):
 
         .. csv-table:: Notations
             :header: "name", "notation", "default value"
-            :widths: 15,15,15 
-        
+            :widths: 15,15,15
+
             inf bound      ,A                , 0
             sup bound      ,K                , 0
             growth rate    ,:math:`\lambda`  , 1
@@ -103,7 +103,7 @@ class GrowthFunction(object):
 
     def _getGrowthFunction(self):
         return self._growth_function
-    growth_function = property(_getGrowthFunction, None, None, 
+    growth_function = property(_getGrowthFunction, None, None,
                                "getter for growth function method")
 
     def _getGrowthRate(self):
@@ -123,40 +123,40 @@ class GrowthFunction(object):
 
 
         :param (float,int,list) age: age at which the growth function should be calculated
-        :return: returns a float if `age` is an integer or float and returns 
-            a numpy.array if `age` is a list. 
-            
-        .. warning:: The function retunrs *K* if the age if larger than the 
+        :return: returns a float if `age` is an integer or float and returns
+            a numpy.array if `age` is a list.
+
+        .. warning:: The function retunrs *K* if the age if larger than the
             maturation.
-        
-        The model used to compute the growth function can be either 
-        
+
+        The model used to compute the growth function can be either
+
             *  'linear'
-            
+
               .. math::
-                    
+
                     A  + (K-A)\frac{t_a}{T_m}
-  
+
             * 'sigmoid'
-            
+
               .. math::
-              
-                  A  + \frac{K-A}{ 1 \exp^{\lambda * (t_a + T_m/2.)}}
-                                  
+
+                  A  + \frac{K-A}{ 1 + \exp^{\lambda * (t_a + T_m/2.)}}
+
             * 'logistic'. See :func:`~openalea.plantik.bioitk.growth.generalisedLogisticFunction`.
 
         """
         import numpy
-        
+
         if type(age) in [float, int]:
             if age > self.maturation:
                 return self.K
-        
+
         age = numpy.array(age)
-        
+
         # set all values greater than maturation to maturation
         age = numpy.where(age>self.maturation, self.maturation, age)
-        
+
         if self.growth_function == 'linear':
             return self.A  + (self.K-self.A) * age / self.maturation
 
@@ -165,16 +165,16 @@ class GrowthFunction(object):
                 /(1.+numpy.exp(self.growth_rate*(-age+self.maturation/2.)))
 
         else: # we should be in the logistic case.
-            y = generalisedLogisticFunction(age, A=self.A, K=self.K, 
+            y = generalisedLogisticFunction(age, A=self.A, K=self.K,
                 B=self.growth_rate, nu=self.nu, Q=1, M=self.maturation/2.)
             return y
-        
+
 
 
 def generalisedLogisticFunction(x, A=0, K=1, B=1, nu=1, Q=1, M=0 ):
     r"""The generalized logistic function
 
-    Also known as Richards' curve is flexible sigmoid function for growth modelling, 
+    Also known as Richards' curve is flexible sigmoid function for growth modelling,
     extending the logistic curve.
 
     .. math::
@@ -184,14 +184,14 @@ def generalisedLogisticFunction(x, A=0, K=1, B=1, nu=1, Q=1, M=0 ):
     :param float A: lower asymptote
     :param float K: upper asymptote
     :param float B: growth rate
-    :param float nu: :math:`\nu > 0`,  affects near which asymptote maximum 
+    :param float nu: :math:`\nu > 0`,  affects near which asymptote maximum
         growth occurs.
     :param float Q: depends on the value Y(0). For instance if A=0, K=1, Q should be 1.
     :param float M: the time of maximum growth if :math:`Q=\nu`
 
 
     A and K efects set the ymin and ymax values. B is the growth rate usually taken
-    to be 1. Q, :math:`\nu` and M are for even more tuning. See examples here below 
+    to be 1. Q, :math:`\nu` and M are for even more tuning. See examples here below
     to get a pictural explanation. M can be seen as a shift parameter if :math:`Q=\nu`
 
     .. seealso:: :meth:`~openalea.plantik.biotik.growth.GrowthFunction.growth_value`
@@ -228,7 +228,7 @@ def generalisedLogisticFunction(x, A=0, K=1, B=1, nu=1, Q=1, M=0 ):
         pylab.plot(x, g(x, A=0, K=1, B=1, M=3), label='M=3')
         pylab.legend(loc='best')
         pylab.grid(True)
-    
+
     ::math:`\nu` effect:
 
     .. plot::

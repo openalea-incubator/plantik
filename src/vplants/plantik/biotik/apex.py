@@ -179,6 +179,7 @@ class Apex(ComponentInterface):
         #. store demand into variables.demand
         #. store allocated into variables.allocated
         #. store vigor into variables.vigor
+        #. store d2a into variables.d2a
 
         :param float dt: 
         """
@@ -235,7 +236,7 @@ class Apex(ComponentInterface):
         """
 
         order_coeff = kargs.get("order_coeff", 0)
-        height_coeff = kargs.get("heigth_coeff", 0)
+        height_coeff = kargs.get("height_coeff", 0)
         rank_coeff = kargs.get("rank_coeff", 0)
         age_coeff = kargs.get("age_coeff", 0)
         vigor_coeff = kargs.get("vigor_coeff", 0)
@@ -244,7 +245,7 @@ class Apex(ComponentInterface):
 
         #todo refactoering switch model to context
         model = context
-        assert model in ["none", "order_height_age",  "order_height"], \
+        assert model in ["none", "order_height_age",  "order_height", "test"],\
             'check your config.ini file (model field) %s provided ' % model
         order = self.context.order
         height = self.context.height
@@ -268,6 +269,27 @@ class Apex(ComponentInterface):
         elif model=='none':
             # nothing to be done in the simple model
             return self.initial_demand
+        elif model =='test':
+
+            self.demand = self.initial_demand 
+            weight = self.context.get_context_weight(order_coeff=order_coeff, 
+                height_coeff=height_coeff, rank_coeff=rank_coeff, d2a_coeff=d2a_coeff)
+            weight*=4.
+            if age_coeff>=0:
+                 w = (2 - 2./(1.+exp(-age_coeff * self.age.days)))
+            else:
+                 w =  2./(1.+exp(age_coeff*self.age.days))-1.
+            weight += w
+            if vigor_coeff>=0:
+                 w = (2 - 2./(1.+exp(-vigor_coeff * self.age.days)))
+            else:
+                 w =  2./(1.+exp(vigor_coeff*self.age.days))-1.
+            assert weight >=0 and weight<=6.
+
+            self.demand =  self.initial_demand * (weight/6.)
+            return self.demand
+ 
+
 
     def computeLivingcost(self):
         pass

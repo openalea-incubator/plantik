@@ -560,8 +560,11 @@ class MTGTools(object):
             #otherwise, we need to reassign order to lateral meristem to get a new apex.
             else:
                 #get last apex and decrease its order by 1
-                this_id = apices_ids[-1]
-                self.mtg.property('Apex')[this_id].context.order -= 1
+                try:
+                    this_id = apices_ids[-1]
+                    self.mtg.property('Apex')[this_id].context.order -= 1
+                except:
+                    pass
 
             #in all cases, recompute the distance between lateral meristem and apex
             heights = [algo.alg_height(self.mtg, branch_components[0], x) for x in apices_ids]
@@ -586,7 +589,7 @@ class MTGTools(object):
         
         .. note:: same as self.select(label="B")
 
-        .. warninng:: call createDB or connectDB before usage
+        .. warning:: call createDB or connectDB before usage
         """
         return self.select(label="B")
 

@@ -91,3 +91,35 @@ class Context(object):
 
     
     
+
+    def get_context_weight(self, model='sigmoid', order_coeff=0., 
+        rank_coeff=0., height_coeff=0., d2a_coeff=0.):
+
+        from numpy import exp
+        weight = 0.
+        if model == 'sigmoid':
+            if order_coeff>=0:
+                w = (2 - 2./(1.+exp(-order_coeff * self.order)))
+            else:
+                w =  2./(1.+exp(order_coeff*self.order))-1.
+            weight+=w
+
+            if rank_coeff>=0:
+                w = (2 - 2./(1.+exp(-rank_coeff * self.rank)))
+            else:
+                w =  2./(1.+exp(rank_coeff*self.rank))-1.
+            weight+=w
+
+            if height_coeff>=0:
+                w = (2 - 2./(1.+exp(-height_coeff * self.height)))
+            else:
+                w =  2./(1.+exp(height_coeff*self.height))-1.
+            weight+=w
+
+            if d2a_coeff>=0:
+                w = (2 - 2./(1.+exp(-d2a_coeff * self.d2a)))
+            else:
+                w =  2./(1.+exp(d2a_coeff*self.d2a))-1.
+            weight+=w
+
+        return weight/4.
