@@ -577,8 +577,26 @@ class MTGTools(object):
 
 
     def get_branch_radius_on_trunk(self):
-        """return all radius of branches on the trunk"""
+        """return all radius of branches on the trunk. 
+
+        Branches on the trunk have order 1 since the trunk 
+        itself has order 0
+
+        """
         return self.select_attribute("radius", label="B", order=1)
+
+    def get_internode_length_on_axis(self, axis_order=None):
+        """
+        Internode have same order as the axis on which they stands
+
+        default beahviour is returns all internode length from any trunk/branch
+        """
+        if axis_order == None:
+            return self.select_attribute("length", label="I")
+        else:
+            assert type(axis_order)==int
+            return self.select_attribute("length", label="I", order=axis_order)
+
 
     def get_branch_length_on_trunk(self):
         """return all length of branches on the trunk"""
