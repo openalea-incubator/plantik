@@ -9,7 +9,6 @@ from openalea.plantgl.all import Sphere, Viewer, Box, Vector3
 
 from openalea.plantik.simulation.simulation import Simulation
 from openalea.plantik.tools.config import ConfigParams
-
 import openalea.plantik.biotik.root as root; reload(root)
 import openalea.plantik.biotik.internode; reload(openalea.plantik.biotik.internode)
 import openalea.plantik.biotik.leaf; reload(openalea.plantik.biotik.leaf)
@@ -33,19 +32,17 @@ from openalea.plantik.tools.colors import Colors
 from openalea.plantik.tools.surface import leafSurface
 from openalea.mtg.io import axialtree2mtg, mtg2axialtree
 import openalea.mtg.traversal as traversal
+from openalea.plantik import get_shared_data
 
 
 RATIO = 50.
 
-
 colors = Colors()
 
-from openalea.plantik import get_shared_data
 options = ConfigParams(get_shared_data('pruning.ini'))
 
 stride_nb = options.geometry.leaf_stride_number
 leaf_surface = leafSurface(int(stride_nb), int(stride_nb))
-
 
 #set bg color
 bg = tuple(options.viewer.background.split(','))
@@ -54,6 +51,7 @@ Viewer.grids.setXYPlane(options.viewer.xygrid)
 Viewer.grids.setYZPlane(options.viewer.yzgrid)
 Viewer.grids.setXZPlane(options.viewer.xzgrid)
 Viewer.light.position = Vector3(5,5, 10)
+#Viewer.camera.setPosition(Vector3(-7,9,60))
 
 # create calendar instance      
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
@@ -73,10 +71,10 @@ module I(Internode) : scale=4
 module L(Leaf): scale=4
 
 global time1
-global norm
 
 #used by the light interception homomorphism
-norm = 8.44
+
+#context().updateNamespace({'options':options})
 
 def Start():
   global options
@@ -84,12 +82,17 @@ def Start():
   global allocation
   global plant
   global apex_args
+  
+  # to be used outside lsystem if needed
+  #context()['options'] = options
   plant.options.context.order_coeff = options.context.order_coeff
   plant.options.context.age_coeff = options.context.age_coeff
   plant.options.context.height_coeff = options.context.height_coeff
   plant.options.context.vigor_coeff = options.context.vigor_coeff
+  plant.options.context.rank_coeff = options.context.rank_coeff
+  plant.options.context.d2a_coeff = options.context.d2a_coeff
   plant.options.leaf.resource = options.leaf.resource
-
+  options = context()['options']
   allocation = Allocation(options.allocation.model, 
                           simulation.calendar.dt.days, 
                           perturbation=options.allocation.perturbation)
@@ -98,8 +101,6 @@ def Start():
   context().turtle.setMaterial(7,Texture2D(image=ImageTexture(filename=get_shared_data('wood_1yo_texture.png')),))
   context().turtle.setMaterial(8,Texture2D(image=ImageTexture(filename=get_shared_data('apple_leaf_texture_4.png')),))
 
-  # to be used outside lsystem if needed
-  context().updateNamespace({'options':options})
   
   apex_args = {
       'demand': options.apex.demand,
@@ -107,7 +108,8 @@ def Start():
       'store_data':options.apex.store_data,
       'growth_threshold':options.apex.growth_threshold
       }
-
+  context().updateNamespace({'options':options})
+  
 def StartEach():
   pass
 
@@ -115,7 +117,7 @@ def EndEach(lstring,scene):
   global allocation
   dt = simulation.calendar.dt.days
   if len(lstring)>=options.general.max_elements:
-    print 'Naximum number of elements reached %s' % (options.general.max_elements)
+    print 'Maximum number of elements reached %s in %s iterations' % (options.general.max_elements, getIterationNb())
     Stop()
     End(lstring, scene)
 
@@ -371,7 +373,6 @@ A(a):
     # First, the internode with the internode's length 
     # the default internode's radius is use to compute the length of this internode given the growth_threshold/allocated resources.
     cost_per_metamer = 1./(options.internode.radius_min*options.internode.radius_min*options.internode.length_max * pi)
-
     length = allocation/cost_per_metamer/pi/options.internode.radius_min/options.internode.radius_min
     #print a.allocated, allocation, length, Internode.cost_per_metamer
     # update distance in meters from the root
@@ -388,6 +389,9 @@ A(a):
     apex_args['vigor'] = vigor
     apex_args['height'] = a.height
     apex_args['birthdate'] = simulation.calendar.date
+    
+    #print options.leaf.resource, options.context.order_coeff
+        
     
     leaf_args = {
       'resource_per_day':options.leaf.resource,
@@ -435,7 +439,7 @@ A(a):
     else:
         nproduce I(Internode(**internode_args))
         nbaxes = options.geometry.nbaxes
-        for i in range(nbaxes):
+        for i in range(int(nbaxes)):
             leaf_args['angle'] = (360.*i/nbaxes)
             angle = (360.*i/nbaxes)
             nproduce [L(Leaf(**leaf_args))] [\(angle)&(options.geometry.branching_angle)  A(Apex(**apex_args))]
@@ -519,7 +523,11 @@ A(a):
     elif options.general.colorcode=='normal':
       colorcode = 5 
     elif options.general.colorcode=='allocated':
-      colorcode = 10 + int(a.allocated/a.initial_demand*10.)
+      try:
+        colorcode = 10 + int(a.allocated/a.initial_demand*10.)
+      except:
+        colorcode=1
+        
     elif options.general.colorcode=='vigor':
       colorcode = 11 + int(a.vigor*10.)
     elif options.general.colorcode=='length':
@@ -530,10 +538,9 @@ A(a):
       raise ValueError('colorcode in config.ini must be in normal, order')
     if a.context.order !=0:
         if a.father_radius == 0:
-          radius = options.geometry.radius_scale *RATIO+a.radius
+          radius = options.geometry.radius_scale +a.radius
         else:
           radius = options.geometry.radius_scale * a.father_radius+ a.radius
-
         produce SetColor(colorcode) +(90)  f(radius) +(-90) Sphere(max(0.4, a.allocated)/300. * RATIO) f(.4)  f(-.4)
     else:
       produce SetColor(colorcode) +(90)  f(0) +(-90)    Sphere(max(0.4, a.allocated)/300. * RATIO) f(.4)  f(-.4)
@@ -551,7 +558,7 @@ I(i):
     elif options.general.colorcode =='allocated':
       colorcode = 1
     elif options.general.colorcode=='length':
-      colorcode = int(i.length/Internode.length_max *10) +10
+      colorcode = int(i.length/options.internode.length_max *10) +10
     elif options.general.colorcode=='vigor':
         colorcode = 1
   
@@ -586,11 +593,11 @@ I(i):
 
 L(c):
     #leaf
-    global norm
+    norm = 8.44
     if options.misc.light_interception is True:
       if c.lg > norm:
         norm = c.lg
-        print 'NORM mst be change to %s' % c.lg
+        print 'NORM must be change to %s' % c.lg
         print (c.area/Leaf.area_max),  c.lg/norm
       
       color = int(53. - (53-36.) * c.lg/norm)
@@ -662,12 +669,14 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_229613000 = pgl.ImageTexture("PGL_229613000" , "./wood_1yo_texture.png" , )
-	Color_7 = pgl.Texture2D(image = PGL_229613000 , )
+	PGL_194119128 = pgl.ImageTexture("PGL_194119128" , "./wood_1yo_texture.png" , )
+	PGL_194119128.name = "PGL_194119128"
+	Color_7 = pgl.Texture2D(image = PGL_194119128 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_236703520 = pgl.ImageTexture("PGL_236703520" , "./apple_leaf_texture_4.png" , )
-	Color_8 = pgl.Texture2D(image = PGL_236703520 , )
+	PGL_191972592 = pgl.ImageTexture("PGL_191972592" , "./apple_leaf_texture_4.png" , )
+	PGL_191972592.name = "PGL_191972592"
+	Color_8 = pgl.Texture2D(image = PGL_191972592 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
