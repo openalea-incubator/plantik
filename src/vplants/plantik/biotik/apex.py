@@ -279,11 +279,14 @@ class Apex(ComponentInterface):
                  w = (2 - 2./(1.+exp(-age_coeff * self.age.days)))
             else:
                  w =  2./(1.+exp(age_coeff*self.age.days))-1.
+            assert w<=1
             weight += w
             if vigor_coeff>=0:
                  w = (2 - 2./(1.+exp(-vigor_coeff * self.age.days)))
             else:
                  w =  2./(1.+exp(vigor_coeff*self.age.days))-1.
+            assert w<=1
+            weight += w
             assert weight >=0 and weight<=6.
 
             self.demand =  self.initial_demand * (weight/6.)
