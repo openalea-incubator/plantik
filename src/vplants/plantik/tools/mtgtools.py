@@ -535,7 +535,6 @@ class MTGTools(object):
                 obj = g.property(self.parameters[node.label][0])[id]
                 obj.context.rank = rank(g, id)
                 obj.context.order = order(g, id)
-                obj.context.order_topo = order(g, id)
                 obj.context.height = height(g, id)
 
 
@@ -632,9 +631,16 @@ class MTGTools(object):
         if show==True:pylab.show()
 
 
-    def get_branch_position(self):
+    def get_branch_position(self, order=1):
+        """Returns the branch position (height) found on the main trunk
+
+        :param int order: instead of the trunk, you can select branches height
+            on other axis. However, the returned list contained results for all
+            axis of this order.
+        """
         g = self.mtg
-        ids = self.select(label='B', order=1)
+        #order 1 to select branches on the main trunk
+        ids = self.select(label='B', order=order)
         positions = []
         for id in ids:
             try:
@@ -708,7 +714,7 @@ def convert2LMS(length):
                 res.append(3)
         return res
 
-def create_sequences(g):
+def _create_sequences(g):
     """
     0: nothing
     1: Short

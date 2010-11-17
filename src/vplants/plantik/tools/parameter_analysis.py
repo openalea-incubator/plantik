@@ -29,10 +29,10 @@ code = finput.read()
 
 production = False
 
-def run(options, code, order=0, age=0, rank=0, height=0, vigor=0, d2a=0, leaf=0.15):
+def run(options, code, order=0, age=0, rank=0, height=0, vigor=0, d2a=0, leaf=0.15, max_step=210):
     l = lpy.Lsystem()
     l.set(code)
-    l.derivationLength = int(options.general.max_step)
+    l.derivationLength = int(max_step)
     l.context()['options'] = options
     l.context()['options'].context.order_coeff  = order
     l.context()['options'].context.rank_coeff   = rank
@@ -41,9 +41,9 @@ def run(options, code, order=0, age=0, rank=0, height=0, vigor=0, d2a=0, leaf=0.
     l.context()['options'].context.age_coeff    = age
     l.context()['options'].context.vigor_coeff  = vigor
     l.context()['options'].leaf.resource  = leaf
-    res = l.iterate()
+    res = l.iterate(1)
     Viewer.animation(False)
-    tree = l.iterate(1,50, res)   
+    tree = l.iterate(1,max_step, res)
     if production == False:
         l.plot(tree)
         Viewer.camera.set(Vector3(0,90,80), 90, -25)
@@ -57,28 +57,54 @@ print 'Initialisation',
 #branches = mtgtools.get_trunk_branch_length(meantree)
 #seq1 = mtgtools.create_sequences(meantree)
 #print  len(branches), map(mtgtools.convert2LMS,  mtgtools.get_trunk_branch_length(meantree))
-    
-    
+
+
 seq_data1 = Sequences('/home/cokelaer/Seq07_T_C_b.txt')
 seq_data2 = Sequences('/home/cokelaer/Seq07_T_C_f.txt')
 print '...done'
 
 for this in ['age', 'order', 'leaf', 'vigor', 'height', 'd2a', 'height', 'rank', 'growth_threshold', 'pipe_fraction']:
     assert getattr(options, this).bins >= 1
-n1 = options.order.bins
-n2 = options.rank.bins
-n3 = options.height.bins
-n4 = options.age.bins
-n5 = options.vigor.bins
-n6 = options.d2a.bins
-n7 = options.leaf.bins
-n8 = options.growth_threshold.bins
-n9 = options.pipe_fraction.bins
 
-results1 = numpy.zeros((n1, n2, n3, n4, n5, n6, n7, n8, n9))
-results2 = numpy.zeros((n1, n2, n3, n4, n5, n6, n7, n8, n9 ))
-results12 = numpy.zeros((n1, n2, n3, n4, n5, n6, n7, n8, n9))
-all_results = numpy.zeros((n1, n2, n3, n4, n5, n6, n7, n8, n9), dtype=lpy.AxialTree)
+n1 = int(options.order.bins)
+n2 = int(options.rank.bins)
+n3 = int(options.height.bins)
+n4 = int(options.age.bins)
+n5 = int(options.vigor.bins)
+n6 = int(options.d2a.bins)
+n7 = int(options.leaf.bins)
+n8 = int(options.growth_threshold.bins)
+n9 = int(options.pipe_fraction.bins)
+
+bins = [n1, n2, n3, n4, n5, n6, n7, n8, n9]
+param_bins = {'order':n1, 'rank':n2, 'height':n3,
+            'age':n4, 'vigor':n5, 'd2a':n6, 
+            'leaf':n7, 'threshold':n8, 'pipe':n9}
+param_min = {'order': options.order.min,
+            'rank':options.rank.min,
+            'height':options.height.min,
+            'age':options.age.min,
+            'vigor':options.vigor.min,
+            'd2a':options.d2a.min,
+            'leaf':options.leaf.min,
+            'threshold':options.growth_threshold.min,
+            'pipe':options.pipe_fraction.min}
+param_max = {'order': options.order.max,
+            'rank':options.rank.max,
+            'height':options.height.max,
+            'age':options.age.max,
+            'vigor':options.vigor.max,
+            'd2a':options.d2a.max,
+            'leaf':options.leaf.max,
+            'threshold':options.growth_threshold.max,
+            'pipe':options.pipe_fraction.max}
+
+results1 = numpy.zeros(bins)
+results2 = numpy.zeros(bins)
+results12 = numpy.zeros(bins)
+all_results = numpy.zeros(bins, dtype=lpy.AxialTree)
+
+
 count = 0
 import time
 for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n1)):
@@ -91,21 +117,29 @@ for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n
                             for p, growth_threshold in enumerate(numpy.linspace(options.growth_threshold.min,options.growth_threshold.max, n8)):
                                 for q, pipe_fraction in enumerate(numpy.linspace(options.pipe_fraction.min,options.pipe_fraction.max, n9)):
                                     count += 1
-                                    print "Progress: %f  completed" % (count / float(n1*n2*n3*n4*n5*n6*n7*n8*n9))
+                                    print "\n----->Progress: %f  completed" % (100*count / float(n1*n2*n3*n4*n5*n6*n7*n8*n9))
                                     options_pruning.apex.growth_threshold = growth_threshold
                                     options_pruning.pipe.fraction = pipe_fraction
+                                    print 'param o=',order, ' l=',leaf, ' a=',age, ' h=', height,' v=',vigor, ' r=',rank, ' d2a=', d2a, ' thres=', growth_threshold, ' pipe=' , pipe_fraction
+                                    try:
+                                        tree = run(options_pruning, code, order=order, 
+                                            age=age, height=height, vigor=vigor, 
+                                            rank=rank, d2a=d2a, leaf=leaf, 
+                                            max_step=int(options.general.iteration))
+                                        mtg = tree[0][0].mtg
 
-                                    print 'param o=',order, ' l=',leaf, ' a=',age, ' p=', height,'v=',vigor
-                                    tree = run(options_pruning, code, order=order, 
-                                        age=age, height=height, vigor=vigor, 
-                                        rank=rank, d2a=d2a)
-                                    mtg = tree[0][0].mtg
-                                    print 'lpy duration=',tree[0][0].duration 
+                                        print 'lpy duration=',tree[0][0].duration 
+                                        seq2 = tree[0][0].mtgtools.get_trunk_sequence()
+                                        lms = tree[0][0].mtgtools.get_trunk_info()
+                                        print  '--', len(lms), lms, seq2
+                                    except:
+                                        seq2 = []   
+                                        lms = []
+                                        print '-- failed'
                                     time1 = time.time()
-                                    """branches = mtgtools.get_trunk_branch_length(mtg)
-                                    print  '--',len(branches), map(mtgtools.convert2LMS,  
-                                                                   mtgtools.get_trunk_branch_length(mtg))
-                                    seq2 = mtgtools.create_sequences(mtg)
+
+
+                                    """
                                     #print seq2
                                     #print '--leven=',LevenshteinDistance( [s[0] for s in seq1[0]], [s[0] for s in seq2[0]])
                                     #print '--strahler=',strahler(tree)
@@ -113,41 +147,55 @@ for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n
                                     #seq2[0] contains a Sequence object with all trunk information LMS 
                                     # if no branchees, all values are equal to zero which raise errror in Merge 
                                     # so we put a branch at the bottom...
-                                    if len(branches)==0 :             
-                                        compatible_seq = [b for b in seq2[0][0]]
-                                        compatible_seq[0][0] = 1
-                                        compatible_seq = Sequences(compatible_seq)
-                                    else:
-                                        compatible_seq = seq2[0]
-                                    print 'trunk (%s)=%s', (len(compatible_seq[0]), compatible_seq[0])
-                                    #print 'duration=',all[0][0].duration 
-                                    distance_matrix = Compare(Merge(SelectVariable(seq_data1,1), compatible_seq), 
-                                                VectorDistance("O"))
-                                    idm = ImprovedDistanceMatrix(distance_matrix)
-                                    res = idm.cumulated_distance()
-                                    results1[i,j,k,l,m] = res[-1]
-                                    print 'compare1=',res[-1]
-                                    print 'duration2=',time.time()-time1
-                                    distance_matrix = Compare(Merge(SelectVariable(seq_data2,1), compatible_seq), 
-                                                VectorDistance("O"))
-                                    idm = ImprovedDistanceMatrix(distance_matrix)
-                                    res = idm.cumulated_distance()
-                                    results2[i,j,k,l,m] = res[-1]
-                                    print 'compare2=',res[-1]
-                                    distance_matrix = Compare(Merge(SelectVariable(seq_data1,1), SelectVariable(seq_data2,1), compatible_seq), 
-                                                VectorDistance("O"))
-                                    idm = ImprovedDistanceMatrix(distance_matrix)
-                                    res = idm.cumulated_distance()
-                                    results12[i,j,k,l,m] = res[-1]
-                                    print 'compare12=',res[-1]
-                                    print 'duration2=',time.time()-time1
-                                    del tree[0][0].lstring
-                                    tree[0][0].mtg.properties()['geometry']={}
-                                              all_results[i,j,k,l,m] = tree[0][0]
                                     """
+                                    if len(lms) == 0 or len(seq2)<=2:
+                                        compatible_seq = Sequences([[1],[2]])
+                                    else:
+                                        if len(set(seq2)) == 1:
+                                            print '!!!!!!!Changing sequence to have at least 2 different values'
+                                            if seq2[1]<3:
+                                                seq2[0] = seq2[1]+1
+                                            else:
+                                                seq2[0] = seq2[1]-1
+                                        compatible_seq = Sequences([[b] for b in seq2])
+
+                                    # for some reasons, the sequenc emust contain at least 2 different values. 
+                                    # For instance, [2,2,2] will raise an error
+
+                                    #compatible_seq = Sequences(seq2)
+                                    distance_matrix = Compare(Merge(SelectVariable(seq_data1,1), compatible_seq),
+                                                VectorDistance("O"))
+                                    idm = ImprovedDistanceMatrix(distance_matrix)
+                                    res = idm.cumulated_distance()
+                                    results1[i,j,k,l,m,n,o,p,q] = res[-1]
+                                    print 'compare1=',res[-1],
+                                    distance_matrix = Compare(Merge(SelectVariable(seq_data2,1), compatible_seq),
+                                            VectorDistance("O"))
+                                    idm = ImprovedDistanceMatrix(distance_matrix)
+                                    res = idm.cumulated_distance()
+                                    results2[i,j,k,l,m,n,o,p,q] = res[-1]
+                                    print 'compare2=',res[-1]
+                                    distance_matrix = Compare(Merge(SelectVariable(seq_data1,1),
+                                        SelectVariable(seq_data2,1), compatible_seq), VectorDistance("O"))
+                                    idm = ImprovedDistanceMatrix(distance_matrix)
+                                    res = idm.cumulated_distance()
+                                    results12[i,j,k,l,m,n,o,p,q] = res[-1]
+                                    print 'compare12=',res[-1],
+                                    #del tree[0][0].lstring
+                                    #tree[0][0].mtg.properties()['geometry']={}
+                                    #all_results[i,j,k,l,m] = tree[0][0]
+
+
+
 import pickle
-pickle.dump({'results':all_results, 'options':options}, open('/tmp/test.dat', 'w'))                    
-numpy.save('data1', results1)
-numpy.save('data2', results2)
-numpy.save('data12', results12)
+#pickle.dump({'results':all_results, 'options':options}, open('/tmp/test.dat', 'w'))
+
+
+pickle.dump({'data':results1, 'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},
+            open('data1.dat','w'))
+pickle.dump({'data':results2, 'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},
+            open('data2.dat','w'))
+pickle.dump({'data':results12, 'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},
+            open('data12.dat','w'))
+
 #pylab.clf(); f = pylab.imshow(results[:,:, 0, 0, 0], interpolation='nearest', origin='lower', extent=[1,3,0.04, 1]); pylab.colorbar(); pylab.axis('normal');pylab.show()
