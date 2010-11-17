@@ -26,6 +26,7 @@
 """
 from vplants.plantik.biotik.collection import SingleVariable, CollectionVariables 
 from vplants.plantik.tools.mtgtools import MTGTools
+from vplants.plantik.biotik.growth import GrowthFunction
 
 
 
@@ -92,14 +93,22 @@ class Plant(object):
         .. todo:: difference pipe_ratio pipe_fraction
         .. todo::   duration,        apex,        all,        dv 
         """
+
+        # RESERVE related
+        self.reserve_duration = options.reserve.duration  # used for the reserve sigmoid
+        self.reserve_starting_time = options.reserve.starting_time      # used for the reserve sigmoid
+        self.Reserve = 0
+        assert options.reserve.alpha>=0 and options.reserve.alpha<=1, 'options reserve.alpha must be in [0,1] in ini file.'
+
+        #FILENAME
         if filename != None: assert type(filename) == str
         if tag != None: assert type(tag) == str
-        assert pipe_fraction<=1 and pipe_fraction>=0
 
         self._filename = self._set_filename(filename, tag)
         self._revision = revision 
         self._options = options
         self._time = []
+        self.age = 0
         self._mtg = None
         self._lstring = None
         self.label = 'Plant'
@@ -115,8 +124,6 @@ class Plant(object):
             self.R = options.root.initial_resource
         except:
             self.R = 1
-        self.reserve = []   # resource sent into the reserve at each step
-        self.RESERVE = []   # total reserve
         self.C = 0
         self.A = 0
         self.allocated = []
@@ -128,7 +135,12 @@ class Plant(object):
 
         #: expected increase of volume related to the pipe model.
         self.dV = 0
+
+        #PIPE FRACTION
+        assert pipe_fraction<=1 and pipe_fraction>=0
         self.pipe_fraction = pipe_fraction
+
+
         self.radius = 0
 
         #: extract storeage for variables over time inluding :attr:`pipe_ratio` and :attr:`dV`.
@@ -136,6 +148,12 @@ class Plant(object):
         self.variables.add(SingleVariable(name='pipe_ratio', unit='ratio', 
                                           values=[]))
         self.variables.add(SingleVariable(name='dV', unit='ratio'))
+        self.variables.add(SingleVariable(name='reserve', unit='UR'))
+
+        self.year = 1
+
+        self._reserve_function = GrowthFunction(0, 1, maturation=(self.year)*self.reserve_duration-self.reserve_starting_time-(self.year-1)*365, 
+                                    growth_rate=0.1,  growth_function='sigmoid', nu=1)
 
         #: a CollectionVariable instance that containes the count of
         # **apices**, **internodes**, **leaves**
@@ -401,10 +419,12 @@ class Plant(object):
 
         .. todo:: this documentation
         """
-
+        self.age += self.dt
 
         self.mtgtools.set_order_path_rank()
         self.mtgtools.distance_to_apex_and_order_reassignment()
+
+
         #reset total demand
         self.D = 0.
         if self.options.misc.reset_resource:
@@ -443,17 +463,28 @@ class Plant(object):
         # substract the living cost from the total resource.
         if self.C > self.R:
             self.R = 0.
+            #self.Reserve -= self.C
         else:
             self.R -= self.C
 
+        # Second sink: Reserve
+        # the compute_reserve function should return a value less than R, so self.R must be >0
+        self.compute_reserve(alpha=self.options.reserve.alpha)
 
-        # second sink is the pipe model ---------------------------------------------------
+
+
+
+        # third sink is the pipe model ---------------------------------------------------
         self.variables.dV.append(self.dV)
 
         # let us compute the amount of dv that will be indeed allocated.
         # Given that we want to use at maximum the amount R*pipe_fraction.
-        dv_a = min(self.R * self.pipe_fraction, self.dV)
-        assert dv_a >= 0 and dv_a <= self.R * self.pipe_fraction and dv_a <= self.dV
+        if self.R >= 0:
+            dv_a = min(self.R * self.pipe_fraction, self.dV)
+            assert dv_a >= 0 and dv_a <= self.R * self.pipe_fraction and dv_a <= self.dV
+        else:
+            dv_a = min(self.Reserve * self.pipe_fraction, self.dV)
+            assert dv_a >= 0 and dv_a <= self.Reserve * self.pipe_fraction and dv_a <= self.dV
 
         # So, the pipe_ratio that is fulfilled 
         if dv_a !=0:
@@ -465,7 +496,10 @@ class Plant(object):
         self.DARC.pipe_cost.append(dv_a)
 
         cost_per_dv = 1.
-        self.R -= dv_a * cost_per_dv
+        if self.R >=0:
+            self.R -= dv_a * cost_per_dv
+        else:
+            self.Reserve -= dv_a * cost_per_dv
         
         self.variables.pipe_ratio.append(pipe_ratio)
 
@@ -476,6 +510,10 @@ class Plant(object):
                 elt[0].radius += (elt[0]._target_radius - elt[0].radius) * pipe_ratio**2.
 
         self._time.append(time_elapsed)
+        if time_elapsed == 365:
+            print '###################3'
+            self.new_season()
+
         self.update_counter(lstring)
         self.branch_update(fast=fast)
         self.growth_unit_update(fast=fast)
@@ -486,6 +524,40 @@ class Plant(object):
         if self.C < 0. and self.C>-1e-15: self.C=0
         if self.D<0 or self.A<0 or self.R<0 or self.C<0:
             raise ValueError("D (%s), A  (%s), R (%s) and C (%s) cannot be negative!" % (self.D, self.A, self.R, self.C))
+
+    def compute_reserve(self, alpha=1):
+        r"""Compute the reserve
+
+        :param float alpha: a multiplier factor
+
+        return the amount of resource to be allocated to the reserve at a given time
+
+        .. math::
+
+            \textrm{Reserve}(t) = \alpha * f(t) * R
+
+        where :math:`R` is the total resource of the system, and :math:`f(t)` a sigmoid function
+        starting at a given **starting_time**. The parameter of te sigmoid function can be
+        given when instanciating the :class:`Plant` object
+
+        """
+        # compute the status of the reserve function (sigmoid between 0-1)
+        _reserve = self._reserve_function.growthValue(self.age - self.reserve_starting_time-365*(self.year-1))
+
+        # a user argument can decrease the max value by multiplying by an alpha parameter.
+        _reserve_fraction = alpha * _reserve
+
+        # so, the reserve at this time step is:
+        self.Reserve+= self.R * _reserve_fraction
+        self.R -= self.R*_reserve_fraction
+        self.variables.reserve.append(self.Reserve)
+
+
+
+    def new_season(self):
+        self.R = min(self.Reserve, 10)
+        self.Reserve = 0.
+        self.year += 1
 
     def growth_unit_update(self, fast=True):
         """update growth unit  information.

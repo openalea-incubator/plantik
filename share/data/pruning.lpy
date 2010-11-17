@@ -35,10 +35,7 @@ import openalea.mtg.traversal as traversal
 from openalea.plantik import get_shared_data
 
 
-RATIO = 50.
-
 colors = Colors()
-
 options = ConfigParams(get_shared_data('pruning.ini'))
 
 stride_nb = options.geometry.leaf_stride_number
@@ -56,7 +53,6 @@ Viewer.light.position = Vector3(5,5, 10)
 # create calendar instance      
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
 
-RESERVE = 0.
 plant = Plant(options.general.time_step, options=options, revision=__revision__,  
                 pipe_fraction=options.pipe.fraction, tag=options.general.tag)
 
@@ -92,6 +88,7 @@ def Start():
   plant.options.context.rank_coeff = options.context.rank_coeff
   plant.options.context.d2a_coeff = options.context.d2a_coeff
   plant.options.leaf.resource = options.leaf.resource
+  plant.pipe_fraction = options.pipe.fraction
   options = context()['options']
   allocation = Allocation(options.allocation.model, 
                           simulation.calendar.dt.days, 
@@ -121,11 +118,10 @@ def EndEach(lstring,scene):
     Stop()
     End(lstring, scene)
 
-  if options.general.verbose and options.general.fast!=True:
+  if options.general.verbose:
     print simulation.date, getIterationNb(), len(lstring)
     
 
-  global RESERVE
   simulation.advance()  
   plant.simulation = simulation
   if 1==0:
@@ -137,8 +133,7 @@ def EndEach(lstring,scene):
     # update
     mtg = axialtree2mtg(lstring, scales, None, parameters)
     plant.mtgtools.mtg = mtg
-    plant.update(simulation.time_elapsed.days, lstring, fast=False)
-    #plant.mtg = 
+    plant.update(simulation.time_elapsed.days, lstring, fast=options.general.fast)
 
     # compute allocated resources according to the individual demand (proportional model)
     allocatedResources = 0
@@ -146,10 +141,6 @@ def EndEach(lstring,scene):
     allocatedResources = allocation.compute_allocation(lstring, plant.R)
     plant.R -= allocatedResources
 
-    res = 0
-    plant.reserve.append(res)
-    RESERVE+=res
-    plant.RESERVE.append(RESERVE)
 
     plant.DARC.A.append(allocatedResources)
     plant.allocated.append(cumulatedAllocatedResources)
@@ -265,7 +256,8 @@ def End(lstring, scene):
     global plant
     time2 = time.time()
     plant.duration = time2-time1
-
+    plant.growth_unit_update(fast=False)
+    plant.branch_update(fast=False)
     if options.general.verbose:
         print 'Simulation took %s.' % (time2-time1), ' Creating figures...'
     plant.lstring = lstring_extract(lstring, labels=['L', 'P', 'A','I', 'B', 'U'])
@@ -313,14 +305,12 @@ production:
 
 group 1: # vegetative growth (spring/summer)
 
-
-
 L(l):
   
-  if (simulation.date.month*30 + simulation.date.day) > 100000:
+  if l.age.days > options.leaf.lifetime:
     produce *
-  
-  
+
+
 A(a):
   dt = simulation.calendar.dt.days
   a.update(dt)
@@ -337,24 +327,11 @@ A(a):
   
   # if current plastochorn of the apex is less than plastochron
   # nothing to be done, otherwise, reset the internal plastochron anc continue
-  #todo <= or < ?
   if a.current_plastochron <= options.apex.plastochron:
-    a.growing = False
     produce A(a)    
   else:        
     a.current_plastochron = dt
     
-  
-  #if a.allocated > a.demand:
-  if a.allocated > options.apex.growth_threshold:
-    a.vigor +=0.05
-    if a.vigor>=1:
-      a.vigor=1.
-  else:
-    a.vigor-=0.05
-    if a.vigor<=0:
-      a.vigor=0.05
-  
   
   # since we have reached plastochron, we check if there is enough allocated R
   if a.allocated<=a.growth_threshold:
@@ -364,11 +341,10 @@ A(a):
     a.growing = False
     produce A(a)
   else:
+    a.growing = True
     demand = options.apex.demand
     allocation = min(1, a.allocated)
     a.allocated -= allocation
-    vigor = max(min(1,a.allocated),0.1)
-    vigor = 0.25
     # Create new internode, leaf and apex 
     # First, the internode with the internode's length 
     # the default internode's radius is use to compute the length of this internode given the growth_threshold/allocated resources.
@@ -386,7 +362,7 @@ A(a):
       'maturation': options.internode.maturation
       }
         
-    apex_args['vigor'] = vigor
+    apex_args['vigor'] = 0.5
     apex_args['height'] = a.height
     apex_args['birthdate'] = simulation.calendar.date
     
@@ -444,9 +420,7 @@ A(a):
             angle = (360.*i/nbaxes)
             nproduce [L(Leaf(**leaf_args))] [\(angle)&(options.geometry.branching_angle)  A(Apex(**apex_args))]
     
-    # keep track of the fact that this apex is growing.
     a.internodes_created += 1  
-    a.growing = True
     a.interruption = 0
     #end of production
   
@@ -456,8 +430,6 @@ A(a):
     
   produce A(a)
     
-
-
 endgroup
 
 
@@ -482,12 +454,7 @@ I(i):
   
 L(l):
   l.update(simulation.calendar.dt.days)
-  #if l.age.days >150:
-  #  produce Cut()
-  #else: 
-  #  produce L(l)
   produce L(l)
-
 
 U(u):
   u.update(simulation.calendar.dt.days)
@@ -541,9 +508,9 @@ A(a):
           radius = options.geometry.radius_scale +a.radius
         else:
           radius = options.geometry.radius_scale * a.father_radius+ a.radius
-        produce SetColor(colorcode) +(90)  f(radius) +(-90) Sphere(max(0.4, a.allocated)/300. * RATIO) f(.4)  f(-.4)
+        produce SetColor(colorcode) +(90)  f(radius) +(-90) Sphere(max(0.4, a.allocated)/6.) f(.4)  f(-.4)
     else:
-      produce SetColor(colorcode) +(90)  f(0) +(-90)    Sphere(max(0.4, a.allocated)/300. * RATIO) f(.4)  f(-.4)
+      produce SetColor(colorcode) +(90)  f(0) +(-90)    Sphere(max(0.4, a.allocated)/6.) f(.4)  f(-.4)
     #Label('   ' +str(
 I(i):
   
@@ -611,19 +578,14 @@ L(c):
       color = 8
     if options.geometry.leaf_view == True:
       #produce SetColor(color) +(90)  ~l(0.8*c.size*10.*RATIO) +(-90) +(options.geometry.branching_angle)
-      if c.age.days>options.geometry.leaf_lifetime:
-        pass
-      else:
-        #vertical -> theta=0;  horizontal theta=90
-        theta = 90
-        # apex and leaf at the same place use phi=0
-        phi = 0
-        from openalea.plantgl.all import Shape
-        
-        
-        ratio = c.area /c.area_max
-        produce  \(c.angle) SetColor(2) +(theta)^(phi) SetWidth(ratio * options.geometry.leaf_petiole_radius*RATIO) f(c.father_radius*options.geometry.radius_scale) F(ratio*options.geometry.leaf_petiole_length*RATIO*c.internode_vigor) SetColor(color) TextureScale(1, 1)  PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*RATIO) -(theta) ^(-phi) 
-          #produce SetColor(color)+(60) RollToVert()      -(60) +(branching_angle)
+      #vertical -> theta=0;  horizontal theta=90
+      theta = 90
+      # apex and leaf at the same place use phi=0
+      phi = 0
+      from openalea.plantgl.all import Shape
+      ratio = c.area /c.area_max
+      produce  \(c.angle) SetColor(2) +(theta)^(phi) SetWidth(ratio * options.geometry.leaf_petiole_radius*50.) f(c.father_radius*options.geometry.radius_scale) F(ratio*options.geometry.leaf_petiole_length*50.*c.internode_vigor) SetColor(color) TextureScale(1, 1)  PglShape(leaf_surface, options.geometry.leaf_surface_ratio*c.area*50.) -(theta) ^(-phi) 
+      #produce SetColor(color)+(60) RollToVert()      -(60) +(branching_angle)
 
 B(b):
     #nproduce \(b.angle)

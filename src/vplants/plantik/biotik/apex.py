@@ -194,6 +194,19 @@ class Apex(ComponentInterface):
             self.variables.allocated.append(self.allocated)
             self.variables.vigor.append(self.vigor)
 
+        if self.current_plastochron == self.plastochron:
+            if self.growing == True:
+                self.vigor += 0.05
+                if self.vigor>=1:
+                    self.vigor = 1.
+            else:
+                self.vigor -=0.05
+                if self.vigor <=0:
+                    self.vigor =0.05
+    
+
+
+
     def demandCalculation(self,  **kargs):
         r"""Compute the demand of an apex according to its context
 
