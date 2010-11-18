@@ -480,8 +480,9 @@ class MTGTools(object):
         """
         from openalea.plantik.biotik import Internode
         ids = self.select(order=order, label="I")
+        volume_standard = self.mtg.property('Internode')[ids[0]].volume_standard
         return sum([self.mtg.property('Internode')[id].volume 
-                    for id in ids ])/ Internode.volume_standard
+                    for id in ids ])/ volume_standard
 
     def getAreaLeaves(self, order=None):
         """return area leaves given order
@@ -547,9 +548,6 @@ class MTGTools(object):
 
             last_axis_id = list(algo.axis(self.mtg, bid, scale=4))[-1]
             apices_ids = [x for x in branch_components if self.mtg.class_name(x)=='A']
-            #except:
-            #    print 'try failed'
-            #    break
 
             # if the last element is an apex, it means we have an unpruned axes
             if self.mtg.label(last_axis_id) == 'A':
