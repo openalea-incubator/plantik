@@ -92,34 +92,33 @@ class Context(object):
     
     
 
-    def get_context_weight(self, model='sigmoid', order_coeff=0., 
+    def get_context_weight(self, model, order_coeff=0., 
         rank_coeff=0., height_coeff=0., d2a_coeff=0.):
 
         from numpy import exp
-        weight = 0.
-        if model == 'sigmoid':
-            if order_coeff>=0:
-                w = (2 - 2./(1.+exp(-order_coeff * self.order)))
-            else:
-                w =  2./(1.+exp(order_coeff*self.order))-1.
-            weight+=w
 
-            if rank_coeff>=0:
-                w = (2 - 2./(1.+exp(-rank_coeff * self.rank)))
-            else:
-                w =  2./(1.+exp(rank_coeff*self.rank))-1.
-            weight+=w
+        #if order_coeff>=0:
+        w1 = (2 - 2./(1.+exp(-order_coeff * self.order)))
+        #else:
+        #    w1 = (2 - 2./(1.+exp(-order_coeff * self.order)))
+        #    #w1 =  2./(1.+exp(order_coeff*self.order))-1.
+        #if rank_coeff>=0:
+        w2 = (2 - 2./(1.+exp(-rank_coeff * self.rank)))
+        #else:
+        #    w2 =  2./(1.+exp(rank_coeff*self.rank))-1.
 
-            if height_coeff>=0:
-                w = (2 - 2./(1.+exp(-height_coeff * self.height)))
-            else:
-                w =  2./(1.+exp(height_coeff*self.height))-1.
-            weight+=w
+        #if height_coeff>=0:
+        w3 = (2 - 2./(1.+exp(-height_coeff * self.height)))
+        #else:
+        #    w3 =  2./(1.+exp(height_coeff*self.height))-1.
 
-            if d2a_coeff>=0:
-                w = (2 - 2./(1.+exp(-d2a_coeff * self.d2a)))
-            else:
-                w =  2./(1.+exp(d2a_coeff*self.d2a))-1.
-            weight+=w
+        #if d2a_coeff>=0:
+        w4 = (2 - 2./(1.+exp(-d2a_coeff * self.d2a)))
+        #else:
+        #    w4 =  2./(1.+exp(d2a_coeff * self.d2a))-1.
 
-        return weight/4.
+
+        if model == 'additive':
+            return w1+w2+w3+w4
+        elif model == 'multiplicative':
+            return w1*w2*w3*w4

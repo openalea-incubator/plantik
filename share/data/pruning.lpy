@@ -7,12 +7,16 @@ import time
 from openalea.fractalysis.light.directLight import diffuseInterception
 from openalea.plantgl.all import Sphere, Viewer, Box, Vector3
 
+
+
 from openalea.plantik.simulation.simulation import Simulation
 from openalea.plantik.tools.config import ConfigParams
 import openalea.plantik.biotik.root as root; reload(root)
 import openalea.plantik.biotik.internode; reload(openalea.plantik.biotik.internode)
 import openalea.plantik.biotik.leaf; reload(openalea.plantik.biotik.leaf)
 import openalea.plantik.biotik.apex; reload(openalea.plantik.biotik.apex)
+import openalea.plantik.biotik.context; reload(openalea.plantik.biotik.context)
+
 import openalea.plantik.biotik.plant; reload(openalea.plantik.biotik.plant)
 import openalea.plantik.tools.lstring; reload(openalea.plantik.tools.lstring)
 import openalea.plantik.biotik.branch; reload(openalea.plantik.biotik.branch)
@@ -107,6 +111,7 @@ def Start():
       }
   context().updateNamespace({'options':options})
   
+  
 def StartEach():
   pass
 
@@ -162,52 +167,18 @@ def EndEach(lstring,scene):
 
 
     coeff = options.pipe.model_coeff
-    if options.pipe.model=='strand_final_only':
-      if options.general.max_step-2==getIterationNb():
-        options.pipe.model = 'strand'
-    
-    #strand = particular case of vinci where all r_i are identical at the highest level.
-    if options.pipe.model=='strand':      
-      strands = {}
-      #TODO use correct pipe model!!!
-      for vid in traversal.post_order(mtg1, 4):
-          strands[vid] = max(sum([strands[c] for c in mtg1.children(vid) if mtg1.class_name(c) in ['I']]), 1)
-      diameters = {}
-      # default value of internode radius
-      default_radius = Internode.radius_min
-      for vid, s in strands.iteritems():
-          diameters[vid] = default_radius * pow(s, 1./coeff)
-          if mtg1.class_name(vid)=='I':
-              mtg1.property('Internode')[vid].radius = diameters[vid]    
-    elif options.pipe.model=='vinci':
-       diameters = {}
-       temp = {'I':'Internode', 'L':'Leaf'}
-       for vid in traversal.pre_order(plant.mtg, 4):
-           diameters[vid] = pow(sum([max(plant.mtg.property(temp[plant.mtg.class_name(c)])[c].radius,0.001)**coeff  for c in plant.mtg.children(vid) if plant.mtg.class_name(c) in ['I', 'L']]), 1./coeff)
-           #print 'vid', vid, diameters[vid], [mtg1.property(temp[mtg1.class_name(c)])[c] for c in mtg1.children(vid) if mtg1.class_name(c) in ['I', 'L']]
-       for vid, s in diameters.iteritems():
-           if plant.mtg.class_name(vid) in ['I']:
-             plant.mtg.property('Internode')[vid].radius = diameters[vid]
-
-    elif options.pipe.model=='vinci2':
-
+    if options.pipe.model=='vinci':
         radius = {}
         temp = {'I':'Internode', 'L':'Leaf'}
         #use post_order since computation should go from leaves to internodes.
         for vid in traversal.post_order(plant.mtg, 4):
-           radius[vid] = pow(
-                           sum(
-                             [ (plant.mtg.property(temp[plant.mtg.class_name(c)])[c].radius)**coeff  
-                               for c in plant.mtg.children(vid) if plant.mtg.class_name(c) in ['I', 'L'] 
-                               ]
-                               ),
-                               1./coeff)
+           radius[vid] = pow(sum([ (plant.mtg.property(temp[plant.mtg.class_name(c)])[c].radius)**coeff for c in plant.mtg.children(vid) if plant.mtg.class_name(c) in ['I', 'L'] ]),1./coeff)
         for vid, s in radius.iteritems():
            if vid in plant.mtgtools.ids['I']:
               # max to prevent radius to shrink
               plant.mtg.property('Internode')[vid].target_radius = max(radius[vid], 
                   plant.mtg.property('Internode')[vid].target_radius)
-    elif options.pipe.model==None:
+    elif options.pipe.model=='none':
       pass
     else:
       pass
@@ -362,7 +333,7 @@ A(a):
       'maturation': options.internode.maturation
       }
         
-    apex_args['vigor'] = 0.5
+    apex_args['vigor'] = 0.25
     apex_args['height'] = a.height
     apex_args['birthdate'] = simulation.calendar.date
     
@@ -553,7 +524,7 @@ I(i):
     nproduce SetColor(colorcode) TextureScale(1,1) TextureTranslation(137.5/180*3.14*h,0)
     #todo ideally the textture should be aligned maybe with TextureTranslation()
     if options.tropism.tropism:
-      nproduce @Tp(0,0,-options.tropism.z_tropism) @Ts(options.tropism.elasticity)
+      nproduce @Tp(options.tropism.x,options.tropism.y,options.tropism.z) @Ts(options.tropism.elasticity)
     nproduce +(0) F(i.length*options.geometry.internode_length_scale, i.radius*options.geometry.radius_scale) 
     nproduce RollL(options.geometry.phyllotactic_angle)
 
@@ -631,14 +602,12 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_194119128 = pgl.ImageTexture("PGL_194119128" , "./wood_1yo_texture.png" , )
-	PGL_194119128.name = "PGL_194119128"
-	Color_7 = pgl.Texture2D(image = PGL_194119128 , )
+	PGL_218307136 = pgl.ImageTexture("PGL_218307136" , "./wood_1yo_texture.png" , )
+	Color_7 = pgl.Texture2D(image = PGL_218307136 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_191972592 = pgl.ImageTexture("PGL_191972592" , "./apple_leaf_texture_4.png" , )
-	PGL_191972592.name = "PGL_191972592"
-	Color_8 = pgl.Texture2D(image = PGL_191972592 , )
+	PGL_196694272 = pgl.ImageTexture("PGL_196694272" , "./apple_leaf_texture_4.png" , )
+	Color_8 = pgl.Texture2D(image = PGL_196694272 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
@@ -801,6 +770,7 @@ def __initialiseContext__(context):
 )
 	Color_53.name = "Color_53"
 	context.turtle.setMaterial(53,Color_53)
+	context.animation_timestep = 0.0
 	context.options.setSelection('Optimization',2)
 	context.options.setSelection('Module inheritance',1)
 	context.options.setSelection('Selection Always Required',1)

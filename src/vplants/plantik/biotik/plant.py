@@ -216,25 +216,30 @@ class Plant(object):
 
 
         """
-        from pylab import bar, hold, legend, title, figure, clf, xlabel
+        from pylab import bar, hold, legend, title, figure, clf, xlabel, plot
         import numpy
 
         T = numpy.array(self.time)
         D = numpy.array(self.DARC.D.values)
         A = numpy.array(self.DARC.A.values)
-        R = numpy.array(self.DARC.R.values)
+        Rn = numpy.array(self.DARC.R.values)
         C = numpy.array(self.DARC.C.values)
+        Reserve = numpy.array(self.variables.reserve.values)
         if normalised == False:
-            R=R/R
+            R=Rn/Rn
         pipe = numpy.array(self.DARC.pipe_cost.values)
         figure(num_fig)
         clf()
-        bar(T, A/R, label='Total allocation fraction', width=1); 
+        bar(T, A/R, label='Primary growth, A', width=1); 
         hold(True); 
-        bar(T, C/R, bottom=A/R, label='Total living cost', color='r', width=1); 
-        bar(T, (pipe/R), bottom=(C+A)/R, color='g', label='Total pipe model cost', width=1); 
-        legend()
-        xlabel('Time in days')
+        bar(T, C/R, bottom=A/R, label='Living cost, C', color='r', width=1); 
+        bar(T, (pipe/R), bottom=(C+A)/R, color='g', label='Secondary growth', width=1); 
+        bar(T, (Reserve/R), bottom=(C+A+pipe)/R, color='y', label='Reserve', width=1) 
+        plot(T, Rn, color='k', label='Resource, R', linewidth=2)
+        plot(T, D, color='k', label='Demand, D', linewidth=1, linestyle='--')
+        legend(loc='best')
+        xlabel('Time (days)')
+        ylabel('Unit Resource')
         title("Proportion of allocation, pipe cost and living cost")
         if show is True:
             from pylab import show as myshow
@@ -430,6 +435,10 @@ class Plant(object):
         if self.options.misc.reset_resource:
             self.R = 0.
 
+        #if self.Reserve > 0 and (self.age -self.year*365) < self.reserve_starting_time:
+        #    _reserve = min(10, self.Reserve)
+        #    self.R += _reserve
+        #    self.Reserve -= _reserve
         # reset total cost
         self.C = 0.
 
@@ -454,7 +463,7 @@ class Plant(object):
         self.C *= self.dt
 
         # does not cost anything to check that dV is positive
-        assert self.dV >=0
+        assert self.dV >=0, self.dV
 
         self.update_DARC(self.D, self.R, self.C)
 
@@ -542,21 +551,22 @@ class Plant(object):
 
         """
         # compute the status of the reserve function (sigmoid between 0-1)
-        _reserve = self._reserve_function.growthValue(self.age - self.reserve_starting_time-365*(self.year-1))
+        _reserve_fraction = alpha * self._reserve_function.growthValue(self.age - self.reserve_starting_time-365*(self.year-1))
 
         # a user argument can decrease the max value by multiplying by an alpha parameter.
-        _reserve_fraction = alpha * _reserve
+        _reserve = _reserve_fraction * self.R
+        
 
         # so, the reserve at this time step is:
-        self.Reserve+= self.R * _reserve_fraction
-        self.R -= self.R*_reserve_fraction
-        self.variables.reserve.append(self.Reserve)
+        self.Reserve+= _reserve
+        self.R -= _reserve
+        self.variables.reserve.append(_reserve)
 
 
 
     def new_season(self):
         self.R = min(self.Reserve, 10)
-        self.Reserve = 0.
+        #self.Reserve = 0.
         self.year += 1
 
     def growth_unit_update(self, fast=True):

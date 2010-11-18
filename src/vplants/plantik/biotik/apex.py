@@ -194,8 +194,20 @@ class Apex(ComponentInterface):
             self.variables.allocated.append(self.allocated)
             self.variables.vigor.append(self.vigor)
 
-        if self.current_plastochron == self.plastochron:
+        """if self.allocated > 0 and self.current_plastochron==self.plastochron:
             if self.growing == True:
+                self.vigor += 0.05
+                if self.vigor>=1:
+                    self.vigor = 1.
+            else:
+                self.vigor -=0.05
+                if self.vigor <=0:
+                    self.vigor =0.05
+        """
+
+        if self.current_plastochron == self.plastochron:
+            #check if the apex got some resource even tough it does not grow.
+            if self.allocated>0:
                 self.vigor += 0.05
                 if self.vigor>=1:
                     self.vigor = 1.
@@ -258,7 +270,7 @@ class Apex(ComponentInterface):
 
         #todo refactoering switch model to context
         model = context
-        assert model in ["none", "order_height_age",  "order_height", "test"],\
+        assert model in ["none", "order_height", "additive", "multiplicative"],\
             'check your config.ini file (model field) %s provided ' % model
         order = self.context.order
         height = self.context.height
@@ -268,41 +280,33 @@ class Apex(ComponentInterface):
         if model=="order_height":
             self.demand = self.initial_demand / float(order+1)**order_coeff / float(height)**height_coeff
             return self.demand
-        elif model=="order_height_age":
-            self.weight_order = 1./float(order+1)**order_coeff
-            self.weight_height = 1./float(height+1)**height_coeff
-            self.weight_rank = 1./float(rank+1)**rank_coeff
-            self.weight_d2a = 1./float(d2a+1)**d2a_coeff
-            self.weight_age = 1./(1+exp(+(0.03*(self.age.days-90.))))
-            self.demand = self.initial_demand * self.weight_order * self.weight_height * self.weight_rank * self.weight_d2a
-            self.demand *= self.weight_age**age_coeff
-            self.demand *= self.vigor**vigor_coeff
-
-            return self.demand
         elif model=='none':
             # nothing to be done in the simple model
             return self.initial_demand
-        elif model =='test':
-
-            self.demand = self.initial_demand 
-            weight = self.context.get_context_weight(order_coeff=order_coeff, 
+        elif model =='additive' or model == 'multiplicative':
+            self.demand = self.initial_demand
+            weight = self.context.get_context_weight(model=model, order_coeff=order_coeff,
                 height_coeff=height_coeff, rank_coeff=rank_coeff, d2a_coeff=d2a_coeff)
-            weight*=4.
-            if age_coeff>=0:
-                 w = (2 - 2./(1.+exp(-age_coeff * self.age.days)))
-            else:
-                 w =  2./(1.+exp(age_coeff*self.age.days))-1.
-            assert w<=1
-            weight += w
-            if vigor_coeff>=0:
-                 w = (2 - 2./(1.+exp(-vigor_coeff * self.age.days)))
-            else:
-                 w =  2./(1.+exp(vigor_coeff*self.age.days))-1.
-            assert w<=1
-            weight += w
-            assert weight >=0 and weight<=6.
 
-            self.demand =  self.initial_demand * (weight/6.)
+            #if age_coeff>=0:
+            w1 = (2 - 2./(1.+exp(-age_coeff * self.age.days)))
+            #else:
+            #     w1 =  2./(1.+exp(age_coeff*self.age.days))-1.
+            #assert w1<=1
+            #if vigor_coeff>=0:
+            w2 = (2 - 2./(1.+exp(-vigor_coeff * self.age.days)))
+            #else:
+            #     w2 =  2./(1.+exp(vigor_coeff*self.age.days))-1.
+            #assert w2<=1
+
+            if model == 'additive':
+                weight = (weight +w1 +w2)/8.
+                assert weight >=0 and weight<=1.
+            elif model == 'multiplicative':
+                weight = weight * w1 * w2
+                assert weight >=0 and weight<=1.
+
+            self.demand =  self.initial_demand * (weight)
             return self.demand
  
 
