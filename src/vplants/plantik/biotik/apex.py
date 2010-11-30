@@ -113,6 +113,7 @@ class Apex(ComponentInterface):
         self._vigor = vigor
         self._growth_threshold = growth_threshold
 
+        self.lg = 0.14
         self.variables = CollectionVariables()
         self.variables.add(SingleVariable(name='age', unit='days', 
                                           values=[self.age.days]))
@@ -124,6 +125,8 @@ class Apex(ComponentInterface):
                                           values=[self.allocated]))
         self.variables.add(SingleVariable(name='vigor', unit='biomass unit', 
                                           values=[self.vigor]))
+        self.variables.add(SingleVariable(name='lg', unit='arbitrary', 
+                                          values=[self.lg]))
 
 
         #read-write attributes
@@ -142,7 +145,7 @@ class Apex(ComponentInterface):
         self.growing = False
         self.internodes_created = 0.        # count number of internodes created by this apex
 
-        self.lg = 0.
+        self.lg = 0.14
 
         self.type = 'Apex' #apex or meristem
 
@@ -193,6 +196,7 @@ class Apex(ComponentInterface):
             self.variables.demand.append(self.demand)
             self.variables.allocated.append(self.allocated)
             self.variables.vigor.append(self.vigor)
+            self.variables.lg.append(self.lg)
 
         """if self.allocated > 0 and self.current_plastochron==self.plastochron:
             if self.growing == True:
@@ -300,13 +304,14 @@ class Apex(ComponentInterface):
             #assert w2<=1
 
             if model == 'additive':
-                weight = (weight +w1 +w2)/8.
+                weight = (weight +w1 +w2)/12.
                 assert weight >=0 and weight<=1.
             elif model == 'multiplicative':
                 weight = weight * w1 * w2
                 assert weight >=0 and weight<=1.
 
             self.demand =  self.initial_demand * (weight)
+            self.demand *= min(1., self.lg/0.04)
             return self.demand
  
 

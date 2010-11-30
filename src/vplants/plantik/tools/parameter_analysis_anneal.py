@@ -24,7 +24,7 @@ options_pruning.geometry.leaf_view = False
 finput = open(get_shared_data('pruning.lpy'), 'r')
 code = finput.read() 
 
-production = True
+production = False
 
 def run(options, code, order=0, age=0, rank=0, height=0, vigor=0, d2a=0, leaf=0.15, max_step=210):
     l = lpy.Lsystem()
@@ -61,25 +61,17 @@ seq_data2 = Sequences('/home/cokelaer/Seq07_T_C_f.txt')
 print '...done'
 
 
-def run2(X):
+def run2(X, max_step=120):
     order = X[0]
     rank = X[1]
     height = X[2]
     age = X[3]
-    #vigor = X[4]
-    d2a = X[4]
-    #leaf = X[6]
-    #threshold = X[7]
-    #pipe = X[8]
-    #rank = 0
-    #height = 0
-    #age = 0
-    vigor = 0
-    #d2a = 0
-    leaf = 0.1
-    pipe =0.9
-    threshold = 0.9
-    max_step  = 210
+    vigor = X[4]
+    d2a = X[5]
+    leaf = X[6]
+    threshold = X[7]
+    pipe = X[8]
+    #threshold = 0.9
     if pipe<=0 or threshold <=0 or leaf<=0: return 10
     if threshold>=1 or pipe>=0.99: return 10
 
@@ -117,13 +109,29 @@ def run2(X):
 
     distance_matrix = Compare(Merge(SelectVariable(seq_data1,1), compatible_seq), VectorDistance("O"), End="Free")
     idm = ImprovedDistanceMatrix(distance_matrix)
-    res = idm.cumulated_distance()
-    print 'Comparaison. o=',order, ' r=',rank, ' h=',height, ' a=',age, ' d2a=',d2a, res[-1]
-    return res[-1]
+    res1 = idm.cumulated_distance()
+    distance_matrix = Compare(Merge(SelectVariable(seq_data1,2), compatible_seq), VectorDistance("O"), End="Free")
+    idm = ImprovedDistanceMatrix(distance_matrix)
+    res2 = idm.cumulated_distance()
+    print "Comparaison. o=%5.2f r=%5.2f h=%5.2f a=%5.2f v=%5.2f d2a=%5.2f leaf=%5.2f t=%5.2f m1=%5.2f m2=%5.2f" % (order, rank, height, age, vigor, d2a, leaf, threshold, res1[-1], res2[-1])
+
+    return res1[-1]
 
 from myanneal import anneal
 #res = optimize.anneal(run2, [2 ], lower=[-3], upper=[3], feps=0.5, full_output=True, maxeval=3, dwell=3, maxiter=3, boltzmann=0.5)
-res = anneal(run2, [2.5, -1,-3,0.4,2 ], schedule='fast', lower=[0,-4,-4,-4,-4], upper=[4,4,4,4,4], full_output=True, maxiter=100, Ninit=200, maxeval=20, dwell=20)
+"""    order = X[0]
+    rank = X[1]
+    height = X[2]
+    age = X[3]
+    vigor = X[4]
+    d2a = X[5]
+    leaf = X[6]
+    threshold = X[7]
+    pipe = X[8]
+"""
+res = anneal(run2, [0,0,0,0,0,0,0.15,0.5,0.9], schedule='fast', lower=[0,-2,-2,-2,-2,-2,0.1,0.1,0.9], upper=[4,2,2,2,2,2,0.2,0.9,0.9], 
+    full_output=True, maxiter=10, Ninit=200)
+# maxeval=None, dwell=None)
 print res
 #,0,0,0,0,0,0.15,0.5,0.9], lower=-3, upper=3)
 #run2([0,0,0,0,0,0,0.15,0.5,0.9])

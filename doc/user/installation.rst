@@ -43,8 +43,15 @@ VPlants installation
     svn co  https://scm.gforge.inria.fr/svn/vplants/vplants/trunk vplants
     cd vplants
     python multisetup.py tool stat_tool sequence_analysis plantgl mtg
+
+VPlants.Plantik installation
+-------------------------------
+
+::
+
     cd plantik
     python setup.py install
+
 
 testing
 =========

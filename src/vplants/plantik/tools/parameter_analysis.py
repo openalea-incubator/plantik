@@ -47,7 +47,7 @@ def run(options, code, order=0, age=0, rank=0, height=0, vigor=0, d2a=0, leaf=0.
     if production == False:
         l.plot(tree)
         Viewer.camera.set(Vector3(0,90,80), 90, -25)
-        Viewer.frameGL.saveImage('pruning_%02d_%02d_%02d_%02d_%02d_%02d_%02.2f.png' % 
+        Viewer.frameGL.saveImage('pruning_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f_%2.2f.png' % 
             (order, height, rank, age, vigor, d2a, leaf),
             'png')
     return tree
@@ -102,6 +102,7 @@ param_max = {'order': options.order.max,
 results1 = numpy.zeros(bins)
 results2 = numpy.zeros(bins)
 results12 = numpy.zeros(bins)
+volumes= numpy.zeros(bins)
 all_results = numpy.zeros(bins, dtype=lpy.AxialTree)
 
 
@@ -136,6 +137,7 @@ for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n
                                         seq2 = []   
                                         lms = []
                                         print '-- failed'
+                                        tree = None
                                     time1 = time.time()
 
 
@@ -181,6 +183,15 @@ for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n
                                     res = idm.cumulated_distance()
                                     results12[i,j,k,l,m,n,o,p,q] = res[-1]
                                     print 'compare12=',res[-1],
+
+
+                                    if tree:
+                                        try:
+                                            volumes[i,j,k,l,m,n,o,p,q] =  tree[0][0].mtgtools.getVolumeInternodes()
+                                        except:
+                                            volumes[i,j,k,l,m,n,o,p,q] =  0
+                                    else:
+                                        volumes[i,j,k,l,m,n,o,p,q] =  0
                                     #del tree[0][0].lstring
                                     #tree[0][0].mtg.properties()['geometry']={}
                                     #all_results[i,j,k,l,m] = tree[0][0]
@@ -191,11 +202,7 @@ import pickle
 #pickle.dump({'results':all_results, 'options':options}, open('/tmp/test.dat', 'w'))
 
 
-pickle.dump({'data':results1, 'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},
-            open('data1.dat','w'))
-pickle.dump({'data':results2, 'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},
-            open('data2.dat','w'))
-pickle.dump({'data':results12, 'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},
-            open('data12.dat','w'))
+pickle.dump({'match12':results12, 'match1':results1, 'match2':results2, 'volumes':volumes, 
+            'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},  open('results.dat','w'))
 
 #pylab.clf(); f = pylab.imshow(results[:,:, 0, 0, 0], interpolation='nearest', origin='lower', extent=[1,3,0.04, 1]); pylab.colorbar(); pylab.axis('normal');pylab.show()

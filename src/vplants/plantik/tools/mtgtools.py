@@ -99,7 +99,7 @@ class MTGTools(object):
         pylab.hist(mtgtools.select_attribute("area", label="L"))
 
     """
-    def __init__(self, mtg=None ):
+    def __init__(self, mtg=None, verbose=True ):
         """**Constructor**
 
         .. warning:: right now, this module expect the MTG to have the following labels: L, A, I, U, B
@@ -118,6 +118,7 @@ class MTGTools(object):
 
 
         """
+        self.verbose = verbose
         self._mtg = mtg
         self.ids = {'L':None,'I':None,'U':None,'B':None, 'A':None}
         self.scales = {'A':4,'I':4,'L':4, 'P':1, 'B':2, 'U':3}
@@ -264,7 +265,8 @@ class MTGTools(object):
         try:
             conn = sqlite3.connect(self.dbfile[1])
         except AttributeError, e:
-            print "MTGTools error: Cannot access dbfile ? Trying to create one by calling createDB() method."
+            if self.verbose:
+                print "MTGTools error: Cannot access dbfile ? Trying to create one by calling createDB() method."
             try:
                 self.createDB()
             except:
@@ -274,9 +276,11 @@ class MTGTools(object):
                 except:
                     print "...failed"
             else:
-                print "DB created succesfully. Connecting...",
+                if self.verbose:
+                    print "DB created succesfully. Connecting...",
                 conn = sqlite3.connect(self.dbfile[1])
-                print "succeeded."
+                if self.verbose:
+                    print "succeeded."
 
 
         self.DB = conn.cursor()
@@ -479,7 +483,7 @@ class MTGTools(object):
 
         """
         from openalea.plantik.biotik import Internode
-        ids = self.select(order=order, label="I")
+        ids = self.select(order=order, label="I" )
         volume_standard = self.mtg.property('Internode')[ids[0]].volume_standard
         return sum([self.mtg.property('Internode')[id].volume 
                     for id in ids ])/ volume_standard
@@ -541,15 +545,22 @@ class MTGTools(object):
 
 
     def distance_to_apex_and_order_reassignment(self):
+        """need to be called  only if pruning is done.
+
+        """
         for bid in self.ids['B']:
             # the following statement looks for all element of same order as the branch but at scale 4
             branch_components = list(self.mtg.components_at_scale (bid, scale=4))
             #print bid, len(branch_components), branch_components
 
-            last_axis_id = list(algo.axis(self.mtg, bid, scale=4))[-1]
+            axis_id = list(algo.axis(self.mtg, bid, scale=4))
+            if len(axis_id)>0:
+                last_axis_id = axis_id[-1]
+            else:
+                continue
             apices_ids = [x for x in branch_components if self.mtg.class_name(x)=='A']
 
-            # if the last element is an apex, it means we have an unpruned axes
+            # if the last element is an apex, it means we have an unpruned axes, so nothing to be done
             if self.mtg.label(last_axis_id) == 'A':
                 pass
                 # if so, we compute the distance between all apices at order 3 with this apices
@@ -565,11 +576,15 @@ class MTGTools(object):
 
             #in all cases, recompute the distance between lateral meristem and apex
             heights = [algo.alg_height(self.mtg, branch_components[0], x) for x in apices_ids]
-            distances = [abs(x - max(heights)) for x in heights]
+            try:
+                max_heights = max(heights)
+                distances = [abs(x - max_heights) for x in heights]
 
-            for i, d in zip(apices_ids, distances):
-                #print i, d, self.mtg[i]
-                self.mtg.property('Apex')[i].context.d2a = d
+                for i, d in zip(apices_ids, distances):
+                    #print i, d, self.mtg[i]
+                    self.mtg.property('Apex')[i].context.d2a = d
+            except:
+                pass
 
 
 
@@ -685,9 +700,9 @@ def convert2LMS(length):
 
     L, M, S stand for Long, Medium, Samll. 
     
-    * S: if l<0.05
-    * M if 0.05<=l<0.2
-    * L if l>=0.2
+    * S(1): if l<0.05
+    * M(2) if 0.05<=l<0.2
+    * L(3) if l>=0.2
 
     values fixed Costes et al 2003 or equivalent
 

@@ -1,11 +1,11 @@
 from openalea.plantik.biotik.plant import *
-from openalea.plantik.tools.config import ReadConfigFile
+from openalea.plantik.tools.config import ConfigParams
 from openalea.plantik import get_shared_data
 
 class test_plant():
 
     def __init__(self):
-        options = ReadConfigFile(get_shared_data('pruning.ini'))
+        options = ConfigParams(get_shared_data('pruning.ini'))
         self.plant = Plant(1, options=options)
         self.plant = Plant(1, options=options, filename='pruning')
         self.create_data()

@@ -15,6 +15,5 @@ User Guide
 
     installation.rst
     manual.rst
-
-
+    experiments.rst
 

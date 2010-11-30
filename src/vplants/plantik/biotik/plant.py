@@ -95,10 +95,18 @@ class Plant(object):
         """
 
         # RESERVE related
-        self.reserve_duration = options.reserve.duration  # used for the reserve sigmoid
-        self.reserve_starting_time = options.reserve.starting_time      # used for the reserve sigmoid
+        try:
+            self.reserve_duration = options.reserve.duration  # used for the reserve sigmoid
+            self.reserve_starting_time = options.reserve.starting_time      # used for the reserve sigmoid
+            assert options.reserve.alpha>=0 and options.reserve.alpha<=1, 'options reserve.alpha must be in [0,1] in ini file.'
+            self.reserve_alpha = options.reserve.alpha
+            self.verbose = options.general.verbose
+        except:
+            self.reserve_duration = 210
+            self.reserve_starting_time = 105
+            self.reserve_alpha = 1
+            self.verbose = True
         self.Reserve = 0
-        assert options.reserve.alpha>=0 and options.reserve.alpha<=1, 'options reserve.alpha must be in [0,1] in ini file.'
 
         #FILENAME
         if filename != None: assert type(filename) == str
@@ -117,7 +125,7 @@ class Plant(object):
 
         #!! when calling self.mtg, what you really do is self.mtgtools.mtg
         # !!when doing self.mtg = a, what you really do is self.mtgtools.mtg = a
-        self.mtgtools = MTGTools()
+        self.mtgtools = MTGTools(verbose=self.verbose)
 
         self.D = 0
         try:
@@ -187,7 +195,7 @@ class Plant(object):
         return res
 
 
-    def plot_PARC(self, show=True, normalised=True, savefig=False, num_fig=1):
+    def plot_PARC(self, show=True, normalised=True, savefig=False, num_fig=1, width=1, linewidth=1):
         """plotting dedicated to the :attr:`PARC` attribute.
 
         where P stand for pipe cost
@@ -216,7 +224,7 @@ class Plant(object):
 
 
         """
-        from pylab import bar, hold, legend, title, figure, clf, xlabel, plot
+        from pylab import bar, hold, legend, title, figure, clf, xlabel, plot, ylabel
         import numpy
 
         T = numpy.array(self.time)
@@ -227,14 +235,16 @@ class Plant(object):
         Reserve = numpy.array(self.variables.reserve.values)
         if normalised == False:
             R=Rn/Rn
+        else:
+            R = Rn
         pipe = numpy.array(self.DARC.pipe_cost.values)
         figure(num_fig)
         clf()
-        bar(T, A/R, label='Primary growth, A', width=1); 
+        bar(T, A/R, label='Primary growth, A', width=width, linewidth=linewidth)
         hold(True); 
-        bar(T, C/R, bottom=A/R, label='Living cost, C', color='r', width=1); 
-        bar(T, (pipe/R), bottom=(C+A)/R, color='g', label='Secondary growth', width=1); 
-        bar(T, (Reserve/R), bottom=(C+A+pipe)/R, color='y', label='Reserve', width=1) 
+        bar(T, C/R, bottom=A/R, label='Living cost, C', color='r', width=width, linewidth=linewidth)
+        bar(T, (pipe/R), bottom=(C+A)/R, color='g', label='Secondary growth', width=width, linewidth=linewidth)
+        bar(T, (Reserve/R), bottom=(C+A+pipe)/R, color='y', label='Reserve', width=width, linewidth=linewidth) 
         plot(T, Rn, color='k', label='Resource, R', linewidth=2)
         plot(T, D, color='k', label='Demand, D', linewidth=1, linestyle='--')
         legend(loc='best')
@@ -436,7 +446,7 @@ class Plant(object):
             self.R = 0.
 
         #if self.Reserve > 0 and (self.age -self.year*365) < self.reserve_starting_time:
-        #    _reserve = min(10, self.Reserve)
+        #    _reserve = min(2, self.Reserve)
         #    self.R += _reserve
         #    self.Reserve -= _reserve
         # reset total cost
@@ -478,7 +488,7 @@ class Plant(object):
 
         # Second sink: Reserve
         # the compute_reserve function should return a value less than R, so self.R must be >0
-        self.compute_reserve(alpha=self.options.reserve.alpha)
+        self.compute_reserve(alpha=self.reserve_alpha)
 
 
 

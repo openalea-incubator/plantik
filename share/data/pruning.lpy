@@ -51,8 +51,8 @@ Viewer.frameGL.setBgColor(int(bg[0]), int(bg[1]), int(bg[2]))
 Viewer.grids.setXYPlane(options.viewer.xygrid)
 Viewer.grids.setYZPlane(options.viewer.yzgrid)
 Viewer.grids.setXZPlane(options.viewer.xzgrid)
-Viewer.light.position = Vector3(5,5, 10)
-#Viewer.camera.setPosition(Vector3(-7,9,60))
+Viewer.light.position = Vector3(5,5, 20)
+
 
 # create calendar instance      
 simulation = Simulation(dt=options.general.time_step, starting_date=options.general.starting_year)
@@ -93,6 +93,7 @@ def Start():
   plant.options.context.d2a_coeff = options.context.d2a_coeff
   plant.options.leaf.resource = options.leaf.resource
   plant.pipe_fraction = options.pipe.fraction
+
   options = context()['options']
   allocation = Allocation(options.allocation.model, 
                           simulation.calendar.dt.days, 
@@ -102,7 +103,6 @@ def Start():
   context().turtle.setMaterial(7,Texture2D(image=ImageTexture(filename=get_shared_data('wood_1yo_texture.png')),))
   context().turtle.setMaterial(8,Texture2D(image=ImageTexture(filename=get_shared_data('apple_leaf_texture_4.png')),))
 
-  
   apex_args = {
       'demand': options.apex.demand,
       'plastochron':options.apex.plastochron,
@@ -129,16 +129,26 @@ def EndEach(lstring,scene):
 
   simulation.advance()  
   plant.simulation = simulation
+
+  #what is it for ? 
   if 1==0:
     pass
   else:
     # Save Lstring
     # Save MTG
-    
+
     # update
     mtg = axialtree2mtg(lstring, scales, None, parameters)
     plant.mtgtools.mtg = mtg
     plant.update(simulation.time_elapsed.days, lstring, fast=options.general.fast)
+
+    #hack to break the simulation if no trunk present
+    #trunk_len = lstring[-1][0].context.height
+    #l = lstring.count('I')
+    #if l > 20 and trunk_len< 3:
+    #  print 'Interrupted'
+    #  Stop()
+    #  End(lstring, scene)
 
     # compute allocated resources according to the individual demand (proportional model)
     allocatedResources = 0
@@ -185,7 +195,7 @@ def EndEach(lstring,scene):
       print 'pipe model %s provided not correct (try strand)' % options.pipe.model
 
     # -------------------- light interception ---------------------------------------------
-    if options.misc.light_interception:
+    if options.misc.light_interception and (getIterationNb()%3 ==0):
       #!! first you need to display the scene
       Viewer.display(scene)
       res = diffuseInterception(scene, jump=1)
@@ -223,6 +233,8 @@ def EndEach(lstring,scene):
 
 
 def End(lstring, scene):
+    global Viewer
+    Viewer.camera.set(Vector3(0,180,30), 90, 10)
     global time1
     global plant
     time2 = time.time()
@@ -268,7 +280,7 @@ def End(lstring, scene):
 
 Axiom: P(plant)  B(Branch(min_radius=0.001)) U(GrowthUnit(min_radius=0.001))  A(Apex(demand=options.apex.demand,id=2, birthdate=simulation.date, plastochron=options.apex.plastochron, store_data=options.apex.store_data, growth_threshold=options.apex.growth_threshold, vigor=1))
 
-derivation length: int(options.general.max_step)
+derivation length: int(options.general.max_days)
 
 ignore: +/
 production:
@@ -294,6 +306,7 @@ A(a):
     plant.R+=a.allocated
     a.allocated = 0.
     a.growing = False
+    a.interruption += 1
     produce A(a)  
   
   # if current plastochorn of the apex is less than plastochron
@@ -312,6 +325,7 @@ A(a):
     a.growing = False
     produce A(a)
   else:
+    
     a.growing = True
     demand = options.apex.demand
     allocation = min(1, a.allocated)
@@ -336,7 +350,6 @@ A(a):
     apex_args['vigor'] = 0.25
     apex_args['height'] = a.height
     apex_args['birthdate'] = simulation.calendar.date
-    
     #print options.leaf.resource, options.context.order_coeff
         
     
@@ -360,24 +373,20 @@ A(a):
       'birthdate':simulation.calendar.date,      
     }
     
-    # print a.interruption , a.growing
-    # the first apex is has interruption = 0 at the beginnin of the simulation
-    # since the axiom is BUA, we do not want to redo BU in that particular case
+    # When a branch is created, B and U are added. However, it should
+    # not be done for the apex of the axiom, which has order==0, height==0
     if a.internodes_created == 0 and a.context.order!=0 and a.context.height!=1:
-        if a.context.order == 1 and simulation.time_elapsed.days<-100:
-          print 'automatic pruning'
-        else:
-          branch_args['angle'] = options.geometry.branching_angle
-          nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
+        branch_args['angle'] = options.geometry.branching_angle
+        nproduce B(Branch(**branch_args)) U(GrowthUnit(**growth_unit_args))
     else:
         # else, if the apex has already grown but has stopped, we only want to add a U
         # if time of interruption > latency
-        if a.interruption >= options.growth_unit.latency and a.growing == False:
-            # then we've been in a latent state. Since, we are going to grow again, 
-            # UC must be added
-            if a.internodes_created == 0:
-                nproduce B(Branch(**branch_args))
-            nproduce U(GrowthUnit(**growth_unit_args))
+        if a.interruption >= options.growth_unit.latency:
+          # then we've been in a latent state. Since, we are going to grow again, 
+          # UC must be added
+          if a.internodes_created == 0:
+              nproduce B(Branch(**branch_args))
+          nproduce U(GrowthUnit(**growth_unit_args))
       
       
       
@@ -393,6 +402,10 @@ A(a):
     
     a.internodes_created += 1  
     a.interruption = 0
+    #once a apices has crossed the growth threshold for the first time, we 
+    #allow it to grow whenever resource are allocated. Only the first time depends
+    #on the user parameter
+    a._growth_threshold = 0.1
     #end of production
   
   if options.misc.reset_resource:
@@ -474,14 +487,30 @@ A(a):
       colorcode=5
     else:
       raise ValueError('colorcode in config.ini must be in normal, order')
-    if a.context.order !=0:
+      
+    norm = 0.14
+    if options.misc.light_interception is True:
+      if a.lg > norm:
+        norm = a.lg
+        print 'NORM must be change to %s' % a.lg
+        print a.lg/norm
+      
+      color = int(53. - (53-36.) * a.lg/norm)
+      #print 'llllgggg', c.lg, c.size, c.size/c.leaf_max_area, color
+      if color<=35 : print 'color', color
+      if color>=54 : print 'color', color
+      
+      if a.lg > norm:
+        print 'light interception', color, a.lg      
+      
+    if a.context.order !=0 and a.context.order!=None:
         if a.father_radius == 0:
           radius = options.geometry.radius_scale +a.radius
         else:
           radius = options.geometry.radius_scale * a.father_radius+ a.radius
-        produce SetColor(colorcode) +(90)  f(radius) +(-90) Sphere(max(0.4, a.allocated)/6.) f(.4)  f(-.4)
+        produce SetColor(colorcode) +(90)  f(radius) +(-90) Sphere(1/6.) f(.4)  f(-.4)
     else:
-      produce SetColor(colorcode) +(90)  f(0) +(-90)    Sphere(max(0.4, a.allocated)/6.) f(.4)  f(-.4)
+      produce SetColor(colorcode) f(.2)+(90)  f(0.) +(-90)    Sphere(1/6.) f(.4)  f(-.4)
     #Label('   ' +str(
 I(i):
   
@@ -531,7 +560,7 @@ I(i):
 
 L(c):
     #leaf
-    norm = 8.44
+    norm = 11.22
     if options.misc.light_interception is True:
       if c.lg > norm:
         norm = c.lg
@@ -602,12 +631,12 @@ def __initialiseContext__(context):
 )
 	Color_6.name = "Color_6"
 	context.turtle.setMaterial(6,Color_6)
-	PGL_218307136 = pgl.ImageTexture("PGL_218307136" , "./wood_1yo_texture.png" , )
-	Color_7 = pgl.Texture2D(image = PGL_218307136 , )
+	PGL_224915608 = pgl.ImageTexture("PGL_224915608" , "./wood_1yo_texture.png" , )
+	Color_7 = pgl.Texture2D(image = PGL_224915608 , )
 	Color_7.name = "Color_7"
 	context.turtle.setMaterial(7,Color_7)
-	PGL_196694272 = pgl.ImageTexture("PGL_196694272" , "./apple_leaf_texture_4.png" , )
-	Color_8 = pgl.Texture2D(image = PGL_196694272 , )
+	PGL_232390536 = pgl.ImageTexture("PGL_232390536" , "./apple_leaf_texture_4.png" , )
+	Color_8 = pgl.Texture2D(image = PGL_232390536 , )
 	Color_8.name = "Color_8"
 	context.turtle.setMaterial(8,Color_8)
 	Color_11 = pgl.Material("Color_11" , 		ambient = (0,0,134) , 
