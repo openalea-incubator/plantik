@@ -61,6 +61,7 @@ print 'Initialisation',
 
 seq_data1 = Sequences('/home/cokelaer/Seq07_T_C_b.txt')
 seq_data2 = Sequences('/home/cokelaer/Seq07_T_C_f.txt')
+all_sequences = []
 print '...done'
 
 for this in ['age', 'order', 'leaf', 'vigor', 'height', 'd2a', 'height', 'rank', 'growth_threshold', 'pipe_fraction']:
@@ -105,10 +106,11 @@ results12 = numpy.zeros(bins)
 volumes= numpy.zeros(bins)
 all_results = numpy.zeros(bins, dtype=lpy.AxialTree)
 
-
+repetitions = options.general.repetition
 count = 0
 import time
-for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n1)):
+for repet in range(0, repetitions):
+  for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n1)):
     for j, rank in enumerate(numpy.linspace(options.rank.min, options.rank.max, n2)):
         for k, height in enumerate(numpy.linspace(options.height.min,options.height.max, n3)):
             for l, age in enumerate(numpy.linspace(options.age.min,options.age.max, n4)):
@@ -118,7 +120,7 @@ for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n
                             for p, growth_threshold in enumerate(numpy.linspace(options.growth_threshold.min,options.growth_threshold.max, n8)):
                                 for q, pipe_fraction in enumerate(numpy.linspace(options.pipe_fraction.min,options.pipe_fraction.max, n9)):
                                     count += 1
-                                    print "\n----->Progress: %f  completed" % (100*count / float(n1*n2*n3*n4*n5*n6*n7*n8*n9))
+                                    print "\n----->Progress: %f  completed" % (100*count / float(n1*n2*n3*n4*n5*n6*n7*n8*n9*repetitions))
                                     options_pruning.apex.growth_threshold = growth_threshold
                                     options_pruning.pipe.fraction = pipe_fraction
                                     print 'param o=',order, ' l=',leaf, ' a=',age, ' h=', height,' v=',vigor, ' r=',rank, ' d2a=', d2a, ' thres=', growth_threshold, ' pipe=' , pipe_fraction
@@ -160,25 +162,25 @@ for i, order in enumerate(numpy.linspace(options.order.min, options.order.max, n
                                             else:
                                                 seq2[0] = seq2[1]-1
                                         compatible_seq = Sequences([[b] for b in seq2])
-
+                                    all_sequences.append([[b] for b in seq2])
                                     # for some reasons, the sequenc emust contain at least 2 different values. 
                                     # For instance, [2,2,2] will raise an error
 
                                     #compatible_seq = Sequences(seq2)
                                     distance_matrix = Compare(Merge(SelectVariable(seq_data1,1), compatible_seq),
-                                                VectorDistance("O"))
+                                                VectorDistance("O"), End="Free")
                                     idm = ImprovedDistanceMatrix(distance_matrix)
                                     res = idm.cumulated_distance()
                                     results1[i,j,k,l,m,n,o,p,q] = res[-1]
                                     print 'compare1=',res[-1],
                                     distance_matrix = Compare(Merge(SelectVariable(seq_data2,1), compatible_seq),
-                                            VectorDistance("O"))
+                                            VectorDistance("O"),End="Free")
                                     idm = ImprovedDistanceMatrix(distance_matrix)
                                     res = idm.cumulated_distance()
                                     results2[i,j,k,l,m,n,o,p,q] = res[-1]
                                     print 'compare2=',res[-1]
                                     distance_matrix = Compare(Merge(SelectVariable(seq_data1,1),
-                                        SelectVariable(seq_data2,1), compatible_seq), VectorDistance("O"))
+                                        SelectVariable(seq_data2,1), compatible_seq), VectorDistance("O"), End="Free")
                                     idm = ImprovedDistanceMatrix(distance_matrix)
                                     res = idm.cumulated_distance()
                                     results12[i,j,k,l,m,n,o,p,q] = res[-1]
@@ -203,6 +205,12 @@ import pickle
 
 
 pickle.dump({'match12':results12, 'match1':results1, 'match2':results2, 'volumes':volumes, 
-            'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins},  open('results.dat','w'))
+            'param_min':param_min, 'param_max':param_max, 'param_bins':param_bins, 'all_sequences':all_sequences},  open('results.dat','w'))
 
-#pylab.clf(); f = pylab.imshow(results[:,:, 0, 0, 0], interpolation='nearest', origin='lower', extent=[1,3,0.04, 1]); pylab.colorbar(); pylab.axis('normal');pylab.show()
+
+"""
+from openalea.plantik.tools.plot import *
+
+
+"""
+

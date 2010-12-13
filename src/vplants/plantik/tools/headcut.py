@@ -140,7 +140,8 @@ def plot_head_cut(count, N):
     S = numpy.array(count['S'])/float(N)
     M = numpy.array(count['M'])/float(N)
     L = numpy.array(count['L'])/float(N)
-    matplotlib.rc('font', size=25)
+    print N, S
+    matplotlib.rc('font', size=22)
     pylab.figure(1)
     x = pylab.linspace(0, len(S), len(S))[::-1]
     pylab.barh(x, L, left=0, color='#666666', label='Long'); 

@@ -1,6 +1,4 @@
 __revision__ = "$Id$"
-
-
 from openalea.deploy import get_metainfo
 
 

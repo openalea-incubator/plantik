@@ -56,18 +56,18 @@ class Leaf(ComponentInterface):
         :header: Name, symbol, default value
         :widths: 15,20,20
         
-        optimal resource    , :math:`r_0`,
+        optimal resource    , :math:`r_0^{(l)}`,
         area                , :math:`\mathcal{A}(t_a)`       , a user :class:`~openalea.plantik.biotik.growth.GrowthFunction`
         petiole_radius      , :math:`r_p`                    , 0.0005    meters
-        area min            , :math:`A_{min}`                , 1. 10e-4  square meter    
-        area max            , :math:`A_{max}`                , 30. 10e-4 square meter
+        area min            , :math:`S_{min}`                , 1. 10e-4  square meter    
+        area max            , :math:`S_{max}`                , 30. 10e-4 square meter
         mass per area       , :math:`a`                       , 200 g/m^2 g per square meter
         efficiency          , ":math:`\mathcal{E}(t,t_a)`"     , see :meth:`leaf_efficiency`
         efficiency parameter, ":math:`t_1`"      , see :meth:`leaf_efficiency`
         efficiency parameter, :math:`t_2`"      , see :meth:`leaf_efficiency`
-        growth rate         , :math:`\lambda`    , 1
+        growth rate         , :math:`\lambda^{(l)}`    , 1
         nu (logistic)       , :math:`\nu`       , 1
-        maturation          , :math:`T_m`        , 21 days
+        maturation          , :math:`T_m^{(l)}`        , 21 days
     
     .. todo:: move area_min, area_max, mass_per_area as arguments
     

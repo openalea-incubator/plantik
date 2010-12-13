@@ -10,6 +10,7 @@ import misc
 import mtgtools
 import plot
 import surface
+import distance
 
 from boxcounting import *
 #from colors import *
@@ -23,3 +24,4 @@ from misc import *
 from mtgtools import * 
 from plot import * 
 from surface import *
+from distance import *
