@@ -657,7 +657,7 @@ class MTGTools(object):
         positions = []
         for id in ids:
             try:
-                internode_id = g.components_at_scale(id, 4).next()
+                internode_id = g.components_at_scale_iter(id, 4).next()
                 pos = g.property('Internode')[internode_id].context.height-1
             except:
                 pos = 0

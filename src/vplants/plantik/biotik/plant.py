@@ -624,7 +624,7 @@ class Plant(object):
             self.mtg.property('GrowthUnit')[vid].length = length
         
         for vid in gu_ids:
-            ids = self.mtg.components_at_scale(vid, scale=4)
+            ids = self.mtg.components_at_scale_iter(vid, scale=4)
             try:
                 first_id = ids.next()
                 if self.mtg.class_name(first_id) == 'I':
@@ -674,7 +674,7 @@ class Plant(object):
         #compute the branches radius
         for vid in branch_ids:
             try:
-                first_id = self.mtg.components_at_scale(vid, scale=4).next()
+                first_id = self.mtg.components_at_scale_iter(vid, scale=4).next()
                 if self.mtg.class_name(first_id) == 'I':
                     self.mtg.property('Branch')[vid].radius = self.mtg.property('Internode')[first_id].radius
             except:
